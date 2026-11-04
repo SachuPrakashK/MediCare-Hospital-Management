@@ -1,14 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Phase23ApiService } from '../../../core/services/phase23-api.service';
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { StatusBadge } from '../../../shared/components/status-badge/status-badge';
 import { DisplayValuePipe } from '../../../shared/pipes/display-value.pipe';
-import { AppIcon } from '../../../shared/components/icon/app-icon';
 
 @Component({
-  imports: [RouterLink, StatusBadge, DisplayValuePipe, AppIcon],
+  imports: [StatusBadge, DisplayValuePipe],
   templateUrl: './radiology-details.html',
   styleUrl: './radiology-details.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

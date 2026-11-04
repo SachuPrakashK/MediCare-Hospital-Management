@@ -44,8 +44,7 @@ const scan = async (directory) => {
     const lines = source.split(/\r?\n/);
     lines.forEach((line, index) => {
       for (const [label, value] of suspicious)
-        if (line.includes(value))
-          findings.push(`${relative(root, path)}:${index + 1}: ${label}`);
+        if (line.includes(value)) findings.push(`${relative(root, path)}:${index + 1}: ${label}`);
     });
   }
 };

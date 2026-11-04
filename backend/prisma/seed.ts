@@ -262,24 +262,26 @@ async function main() {
     throw new Error(
       'SEED_HOSPITAL_ADMIN_EMAIL and SEED_HOSPITAL_ADMIN_PASSWORD of at least 12 characters are required.',
     );
-  const admin = await prisma.user.upsert({
-    where: { email },
-    update: {
-      status: 'ACTIVE',
-      deletedAt: null,
-      username: 'hospitaladmin',
-      passwordHash: await argon2.hash(password),
-      firstName: process.env.SEED_HOSPITAL_ADMIN_FIRST_NAME || 'Hospital',
-      lastName: process.env.SEED_HOSPITAL_ADMIN_LAST_NAME || 'Admin',
-    },
-    create: {
-      email,
-      username: 'hospitaladmin',
-      passwordHash: await argon2.hash(password),
-      firstName: process.env.SEED_HOSPITAL_ADMIN_FIRST_NAME || 'Hospital',
-      lastName: process.env.SEED_HOSPITAL_ADMIN_LAST_NAME || 'Admin',
-    },
-  });
+  const existingAdmin = await prisma.user.findUnique({ where: { username: 'hospitaladmin' } });
+  const emailOwner = await prisma.user.findUnique({ where: { email } });
+  if (emailOwner && emailOwner.id !== existingAdmin?.id)
+    throw new Error('SEED_HOSPITAL_ADMIN_EMAIL is already assigned to another user.');
+  const adminData = {
+    status: 'ACTIVE',
+    deletedAt: null,
+    username: 'hospitaladmin',
+    passwordHash: await argon2.hash(password),
+    firstName: process.env.SEED_HOSPITAL_ADMIN_FIRST_NAME || 'Hospital',
+    lastName: process.env.SEED_HOSPITAL_ADMIN_LAST_NAME || 'Admin',
+  } as const;
+  const admin = existingAdmin
+    ? await prisma.user.update({ where: { id: existingAdmin.id }, data: { ...adminData, email } })
+    : await prisma.user.create({
+        data: {
+          ...adminData,
+          email,
+        },
+      });
   await prisma.$transaction([
     prisma.userRole.deleteMany({ where: { userId: admin.id } }),
     prisma.userRole.create({ data: { userId: admin.id, roleId: hospitalAdminRole.id } }),

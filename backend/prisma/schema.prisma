@@ -106,6 +106,7 @@ model User {
   supportTickets            SupportTicket[]              @relation("SupportTicketRequester")
   supportTicketsAssigned    SupportTicket[]              @relation("SupportTicketAssignee")
   supportTicketHistory      SupportTicketStatusHistory[]
+  aiConversations           AIConversation[]
 
   @@index([status])
   @@index([departmentId, status])
@@ -1338,4 +1339,34 @@ model AuditLog {
   user       User?    @relation(fields: [userId], references: [id])
 
   @@index([module, action, createdAt])
+}
+
+model AIConversation {
+  id            String      @id @default(uuid())
+  userId        String
+  title         String      @default("New conversation")
+  status        String      @default("ACTIVE")
+  lastMessageAt DateTime    @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      AIMessage[]
+
+  @@index([userId, status, lastMessageAt])
+  @@index([expiresAt])
+}
+
+model AIMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  role           String
+  content        String         @db.Text
+  status         String         @default("COMPLETED")
+  inputTokens    Int?
+  outputTokens   Int?
+  createdAt      DateTime       @default(now())
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

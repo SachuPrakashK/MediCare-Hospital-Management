@@ -48,6 +48,14 @@ describe('API application', () => {
     expect(response.status).toBe(404);
     expect(response.body.code).toBe('NOT_FOUND');
   });
+  it('does not expose Aira conversations without authentication', async () => {
+    const response = await request(createApp()).get('/api/v1/ai/conversations');
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      message: 'Authentication is required.',
+      code: 'UNAUTHORIZED',
+    });
+  });
   it('publishes enabled language metadata and translations without authentication', async () => {
     vi.spyOn(prisma.language, 'findMany').mockResolvedValueOnce([
       {
