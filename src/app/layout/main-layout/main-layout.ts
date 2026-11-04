@@ -21,8 +21,17 @@ import {
   SIDEBAR_BOTTOM_ITEMS,
   SIDEBAR_NAVIGATION_GROUPS,
 } from '../../core/navigation/navigation.config';
+import { AiraAssistant } from '../../features/ai-assistant/components/aira-assistant/aira-assistant';
 @Component({
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, AppIcon, Breadcrumbs, TranslatePipe],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    AppIcon,
+    Breadcrumbs,
+    TranslatePipe,
+    AiraAssistant,
+  ],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

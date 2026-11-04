@@ -29,6 +29,7 @@ import { languageRoutes } from './routes/language.routes.js';
 import { supportRoutes } from './routes/support.routes.js';
 import { reportsRoutes } from './routes/reports.routes.js';
 import { prisma } from './config/prisma.js';
+import { aiRoutes } from './routes/ai.routes.js';
 
 export const createApp = () => {
   const app = express();
@@ -90,6 +91,7 @@ export const createApp = () => {
   app.use('/api/v1/preferences', preferenceRoutes);
   app.use('/api/v1/support', supportRoutes);
   app.use('/api/v1/reports', reportsRoutes);
+  app.use('/api/v1/ai', aiRoutes);
   app.use('/api/v1/appointments', appointmentRoutes);
   app.use('/api/v1/opd-queue', opdQueueRoutes);
   app.use('/api/v1', clinicalRoutes);

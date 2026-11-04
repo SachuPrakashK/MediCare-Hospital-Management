@@ -1,0 +1,215 @@
+<button
+  class="aira-launcher"
+  type="button"
+  [class.is-open]="open()"
+  [attr.aria-expanded]="open()"
+  aria-controls="aira-panel"
+  (click)="toggle()"
+>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      d="M12 2.8c.6 4.5 2.7 6.6 7.2 7.2-4.5.6-6.6 2.7-7.2 7.2-.6-4.5-2.7-6.6-7.2-7.2C9.3 9.4 11.4 7.3 12 2.8Z"
+    />
+    <path
+      d="M19 15.2c.2 1.8 1.1 2.7 2.9 2.9-1.8.2-2.7 1.1-2.9 2.9-.2-1.8-1.1-2.7-2.9-2.9 1.8-.2 2.7-1.1 2.9-2.9Z"
+    />
+  </svg>
+  <span>{{ text('Ask Aira', 'اسأل Aira') }}</span>
+</button>
+
+@if (open()) {
+  <section
+    id="aira-panel"
+    class="aira-panel"
+    [class.rtl]="rtl()"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="aira-title"
+  >
+    <header class="aira-header">
+      <div class="aira-identity">
+        <span class="aira-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 2.8c.6 4.5 2.7 6.6 7.2 7.2-4.5.6-6.6 2.7-7.2 7.2-.6-4.5-2.7-6.6-7.2-7.2C9.3 9.4 11.4 7.3 12 2.8Z"
+            />
+          </svg>
+        </span>
+        <span
+          ><strong id="aira-title">Aira</strong
+          ><small>{{
+            text('Your intelligent MediCare+ assistant', 'مساعدك الذكي في MediCare+')
+          }}</small></span
+        >
+      </div>
+      <div class="aira-header-actions">
+        <button
+          type="button"
+          (click)="historyOpen.set(!historyOpen())"
+          [attr.aria-label]="text('Conversation history', 'سجل المحادثات')"
+          [attr.aria-expanded]="historyOpen()"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6M12 7v5l3 2" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          (click)="newConversation()"
+          [attr.aria-label]="text('New conversation', 'محادثة جديدة')"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <button
+          type="button"
+          (click)="close()"
+          [attr.aria-label]="text('Close Aira', 'إغلاق Aira')"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+    </header>
+
+    @if (historyOpen()) {
+      <aside class="aira-history" [attr.aria-label]="text('Conversation history', 'سجل المحادثات')">
+        <div>
+          <strong>{{ text('Conversation history', 'سجل المحادثات') }}</strong
+          ><button
+            type="button"
+            (click)="historyOpen.set(false)"
+            [attr.aria-label]="text('Close history', 'إغلاق السجل')"
+          >
+            ×
+          </button>
+        </div>
+        @if (!conversations().length) {
+          <p>{{ text('No conversations yet.', 'لا توجد محادثات بعد.') }}</p>
+        }
+        @for (conversation of conversations(); track conversation.id) {
+          <button
+            type="button"
+            [class.active]="conversation.id === activeId()"
+            (click)="select(conversation.id)"
+          >
+            <span>{{ conversation.title }}</span
+            ><small>{{ relativeTime(conversation.lastMessageAt) }}</small>
+          </button>
+        }
+      </aside>
+    }
+
+    <div class="aira-conversation-title">{{ activeTitle() }}</div>
+    <main #messageList class="aira-messages" aria-live="polite" aria-busy="{{ loading() }}">
+      @if (loading()) {
+        <div class="aira-state">
+          <span class="aira-spinner"></span>
+          <p>{{ text('Loading conversation…', 'جارٍ تحميل المحادثة…') }}</p>
+        </div>
+      } @else if (!messages().length) {
+        <div class="aira-welcome">
+          <span class="aira-welcome-mark" aria-hidden="true">✦</span>
+          <h2>{{ text("Hi! I'm Aira", 'مرحبًا! أنا Aira') }}</h2>
+          <p>
+            {{
+              text(
+                "Hi! I'm Aira, your MediCare+ AI assistant. I can help you find information, explore reports, and navigate hospital workflows. What would you like to do today?",
+                'مرحبًا! أنا Aira، مساعد الذكاء الاصطناعي في MediCare+. يمكنني مساعدتك في العثور على المعلومات واستكشاف التقارير والتنقل في سير عمل المستشفى. ماذا تريد أن تفعل اليوم؟'
+              )
+            }}
+          </p>
+          <div class="aira-suggestions">
+            @for (question of starterQuestions(); track question) {
+              <button type="button" (click)="useSuggestion(question)">{{ question }}</button>
+            }
+          </div>
+        </div>
+      } @else {
+        @for (message of messages(); track message.id) {
+          <article
+            class="aira-message"
+            [class.user]="message.role === 'USER'"
+            [class.assistant]="message.role === 'ASSISTANT'"
+          >
+            <div>
+              @if (message.pending && !message.content) {
+                <span
+                  class="aira-typing"
+                  [attr.aria-label]="text('Aira is responding', 'Aira تكتب')"
+                  ><i></i><i></i><i></i
+                ></span>
+              } @else {
+                <p>{{ message.content }}</p>
+              }
+            </div>
+            @if (message.role === 'ASSISTANT' && message.content) {
+              <button
+                class="aira-copy"
+                type="button"
+                (click)="copy(message)"
+                [attr.aria-label]="text('Copy response', 'نسخ الرد')"
+              >
+                {{ text('Copy', 'نسخ') }}
+              </button>
+            }
+          </article>
+        }
+      }
+    </main>
+
+    @if (error()) {
+      <div class="aira-error" role="alert">
+        <span>{{ error() }}</span
+        ><button type="button" (click)="retry()">{{ text('Retry', 'إعادة المحاولة') }}</button>
+      </div>
+    }
+    <footer class="aira-composer">
+      <div>
+        <textarea
+          #composer
+          rows="1"
+          maxlength="4000"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          (keydown)="onComposerKeydown($event)"
+          [disabled]="sending() || loading()"
+          [placeholder]="text('Message Aira…', 'اكتب رسالة إلى Aira…')"
+          [attr.aria-label]="text('Message Aira', 'اكتب رسالة إلى Aira')"
+        ></textarea>
+        @if (sending()) {
+          <button
+            class="aira-stop"
+            type="button"
+            (click)="stop()"
+            [attr.aria-label]="text('Stop response', 'إيقاف الرد')"
+          >
+            <span></span>
+          </button>
+        } @else {
+          <button
+            class="aira-send"
+            type="button"
+            (click)="send()"
+            [disabled]="!draft().trim() || !activeId()"
+            [attr.aria-label]="text('Send message', 'إرسال الرسالة')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14" />
+            </svg>
+          </button>
+        }
+      </div>
+      <small>{{
+        text(
+          'Aira can make mistakes. Verify important information.',
+          'قد تخطئ Aira. تحقق من المعلومات المهمة.'
+        )
+      }}</small>
+    </footer>
+  </section>
+  <button
+    class="aira-mobile-backdrop"
+    type="button"
+    aria-label="Close Aira"
+    (click)="close()"
+  ></button>
+}
