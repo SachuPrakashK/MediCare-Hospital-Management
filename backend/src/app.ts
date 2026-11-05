@@ -53,6 +53,15 @@ export const createApp = () => {
     }),
   );
   app.use(
+    '/api/v1/auth/demo-login',
+    rateLimit({
+      windowMs: 15 * 60_000,
+      limit: 30,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
+  );
+  app.use(
     '/api/v1/auth/forgot-password',
     rateLimit({
       windowMs: 15 * 60_000,

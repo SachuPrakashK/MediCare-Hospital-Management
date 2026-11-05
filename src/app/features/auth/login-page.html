@@ -110,6 +110,21 @@
           <span>Sign In</span><app-icon name="arrow-right" [size]="18" />
         }
       </button>
+      <div class="login-demo" aria-label="Guest access">
+        <span class="login-demo__divider" aria-hidden="true">or</span>
+        <button
+          type="button"
+          class="login-demo__link"
+          [disabled]="auth.loading()"
+          (click)="continueAsGuest()"
+          aria-label="Enter MediCare+ with read-only guest access"
+        >
+          <app-icon name="eye" [size]="18" />
+          <span>Continue as Guest</span>
+          <app-icon name="arrow-right" [size]="16" />
+        </button>
+        <small>Explore approved demo features with read-only access.</small>
+      </div>
       <p class="login-help">
         Need help accessing your account? Contact your hospital administrator.
       </p>

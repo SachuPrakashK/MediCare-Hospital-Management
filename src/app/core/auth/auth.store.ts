@@ -123,6 +123,38 @@ export class AuthStore {
     }
   }
 
+  async loginAsGuest() {
+    if (this.loading()) return false;
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.http.post<LoginResponse>(
+          '/api/v1/auth/demo-login',
+          {},
+          { headers: { 'X-Handle-Error-Locally': 'true' } },
+        ),
+      );
+      this.setSession({
+        user: mapUser(response.data.user),
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+        expiresAt: Date.now() + response.data.expires_in * 1000,
+        remember: false,
+      });
+      this.toast.resetSessionExpiry();
+      await this.applicationSettings.load();
+      await this.language.load();
+      this.sessionExpiryFlight = undefined;
+      return true;
+    } catch {
+      this.error.set('Guest access is temporarily unavailable. Please try again shortly.');
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async refresh() {
     if (this.refreshFlight) return this.refreshFlight;
     const session = this.sessionState();

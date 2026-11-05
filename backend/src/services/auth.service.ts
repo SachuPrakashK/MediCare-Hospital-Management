@@ -30,6 +30,7 @@ const rolePriority = [
   'LAB_TECHNICIAN',
   'RADIOLOGY_TECHNICIAN',
   'BILLING_STAFF',
+  'GUEST',
 ];
 const primaryRoleFor = (user: AuthUser) => {
   const roles = user.roles.map(({ role }) => role);
@@ -56,6 +57,39 @@ const sessionUserFor = (user: AuthUser) => {
     role: { id: primaryRole.id, code: primaryRole.code, name: primaryRole.name },
     roles: user.roles.map(({ role }) => ({ id: role.id, code: role.code, name: role.name })),
     permissions: permissionsFor(user),
+  };
+};
+const issueSession = async (
+  user: AuthUser,
+  context: { userAgent?: string; ipAddress?: string },
+) => {
+  const security = await administrationService.security();
+  const sessionId = randomUUID();
+  const permissions = permissionsFor(user);
+  const roles = rolesFor(user);
+  const refreshToken = jwt.sign(
+    { sub: user.id, sid: sessionId, type: 'refresh' },
+    env.REFRESH_TOKEN_SECRET,
+    { expiresIn: `${env.REFRESH_TOKEN_EXPIRATION_DAYS}d` },
+  );
+  await authRepository.createSession({
+    id: sessionId,
+    userId: user.id,
+    tokenHash: hashToken(refreshToken),
+    expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_EXPIRATION_DAYS * 86_400_000),
+    ...context,
+  });
+  await authRepository.touchLogin(user.id);
+  const accessToken = jwt.sign(
+    { sub: user.id, sid: sessionId, permissions, roles },
+    env.ACCESS_TOKEN_SECRET,
+    { expiresIn: `${security.sessionTimeoutMinutes}m` as SignOptions['expiresIn'] },
+  );
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: security.sessionTimeoutMinutes * 60,
+    user: sessionUserFor(user),
   };
 };
 
@@ -104,37 +138,19 @@ export const authService = {
       }
       throw new AppError(401, 'Email or password is incorrect.', 'INVALID_CREDENTIALS');
     }
-    const sessionId = randomUUID();
     await prisma.user.update({
       where: { id: user.id },
       data: { failedLoginAttempts: 0, lockedUntil: null },
     });
-    const permissions = permissionsFor(user);
-    const roles = rolesFor(user);
-    const refreshToken = jwt.sign(
-      { sub: user.id, sid: sessionId, type: 'refresh' },
-      env.REFRESH_TOKEN_SECRET,
-      { expiresIn: `${env.REFRESH_TOKEN_EXPIRATION_DAYS}d` },
-    );
-    await authRepository.createSession({
-      id: sessionId,
-      userId: user.id,
-      tokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + env.REFRESH_TOKEN_EXPIRATION_DAYS * 86_400_000),
-      ...context,
-    });
-    await authRepository.touchLogin(user.id);
-    const accessToken = jwt.sign(
-      { sub: user.id, sid: sessionId, permissions, roles },
-      env.ACCESS_TOKEN_SECRET,
-      { expiresIn: `${security.sessionTimeoutMinutes}m` as SignOptions['expiresIn'] },
-    );
-    return {
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      expires_in: security.sessionTimeoutMinutes * 60,
-      user: sessionUserFor(user),
-    };
+    return issueSession(user, context);
+  },
+  async demoLogin(context: { userAgent?: string; ipAddress?: string }) {
+    const user = await authRepository.findUserByEmail('guest@medicare.demo');
+    const roleCodes = user?.roles.map(({ role }) => role.code) ?? [];
+    if (!user || user.status !== 'ACTIVE' || roleCodes.length !== 1 || roleCodes[0] !== 'GUEST') {
+      throw new AppError(503, 'Guest access is currently unavailable.', 'GUEST_ACCESS_UNAVAILABLE');
+    }
+    return issueSession(user, context);
   },
   async logout(sessionId: string) {
     await authRepository.revokeSession(sessionId);

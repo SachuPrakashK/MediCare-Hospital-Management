@@ -36,4 +36,8 @@ export class LoginPage {
         this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard',
       );
   }
+
+  async continueAsGuest() {
+    if (await this.auth.loginAsGuest()) void this.router.navigateByUrl('/dashboard');
+  }
 }

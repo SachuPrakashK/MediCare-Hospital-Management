@@ -9,6 +9,13 @@ export const login: RequestHandler = asyncHandler(async (req, res) => {
   });
   res.json({ data, message: 'Login successful.' });
 });
+export const demoLogin: RequestHandler = asyncHandler(async (req, res) => {
+  const data = await authService.demoLogin({
+    userAgent: req.get('user-agent'),
+    ipAddress: req.ip,
+  });
+  res.json({ data, message: 'Guest session started.' });
+});
 export const logout: RequestHandler = asyncHandler(async (req, res) => {
   await authService.logout(req.auth!.sessionId);
   res.json({ data: null, message: 'Logout successful.' });
