@@ -1,4 +1,5 @@
 import argon2 from 'argon2';
+import { randomBytes } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 const permissions = [
@@ -133,6 +134,22 @@ async function main() {
       }),
     ),
   );
+  const guestRole = await prisma.role.upsert({
+    where: { code: 'GUEST' },
+    update: {
+      name: 'Guest',
+      description: 'Read-only access to approved demonstration modules',
+      status: 'ACTIVE',
+      isSystem: true,
+    },
+    create: {
+      code: 'GUEST',
+      name: 'Guest',
+      description: 'Read-only access to approved demonstration modules',
+      status: 'ACTIVE',
+      isSystem: true,
+    },
+  });
   await prisma.rolePermission.createMany({
     data: created.map((permission) => ({
       roleId: hospitalAdminRole.id,
@@ -141,6 +158,32 @@ async function main() {
     skipDuplicates: true,
   });
   const permissionByCode = new Map(created.map((permission) => [permission.code, permission.id]));
+  const guestPermissions = [
+    'dashboard.view',
+    'patients.view',
+    'appointments.view',
+    'queue.view',
+    'laboratory.view',
+    'radiology.view',
+    'admissions.view',
+    'procedures.view',
+    'pharmacy.view',
+    'billing.view',
+    'insurance.view',
+    'inventory.view',
+    'ambulance.view',
+    'reports.view',
+    'doctors.view',
+    'departments.view',
+    'support.view',
+  ];
+  await prisma.rolePermission.deleteMany({ where: { roleId: guestRole.id } });
+  await prisma.rolePermission.createMany({
+    data: guestPermissions.map((code) => ({
+      roleId: guestRole.id,
+      permissionId: permissionByCode.get(code)!,
+    })),
+  });
   await prisma.rolePermission.createMany({
     data: staffRoles.flatMap((role) =>
       ['support.view', 'support.ticket.create'].map((code) => ({
@@ -285,6 +328,27 @@ async function main() {
   await prisma.$transaction([
     prisma.userRole.deleteMany({ where: { userId: admin.id } }),
     prisma.userRole.create({ data: { userId: admin.id, roleId: hospitalAdminRole.id } }),
+  ]);
+  const guestEmail = 'guest@medicare.demo';
+  const existingGuest = await prisma.user.findUnique({ where: { username: 'demo-guest' } });
+  const guestEmailOwner = await prisma.user.findUnique({ where: { email: guestEmail } });
+  if (guestEmailOwner && guestEmailOwner.id !== existingGuest?.id)
+    throw new Error('The reserved guest email is already assigned to another user.');
+  const guestData = {
+    email: guestEmail,
+    username: 'demo-guest',
+    firstName: 'Demo',
+    lastName: 'Guest',
+    status: 'ACTIVE',
+    deletedAt: null,
+    passwordHash: await argon2.hash(randomBytes(48).toString('base64url')),
+  } as const;
+  const guest = existingGuest
+    ? await prisma.user.update({ where: { id: existingGuest.id }, data: guestData })
+    : await prisma.user.create({ data: guestData });
+  await prisma.$transaction([
+    prisma.userRole.deleteMany({ where: { userId: guest.id } }),
+    prisma.userRole.create({ data: { userId: guest.id, roleId: guestRole.id } }),
   ]);
   await prisma.hospitalSettings.upsert({
     where: { id: 'default' },

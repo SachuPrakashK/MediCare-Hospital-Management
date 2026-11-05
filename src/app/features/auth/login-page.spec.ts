@@ -11,6 +11,7 @@ describe('LoginPage', () => {
     loading: signal(false),
     error: signal<string | null>(null),
     login: vi.fn(async () => true),
+    loginAsGuest: vi.fn(async () => true),
   };
   const router = { navigateByUrl: vi.fn() };
   const language = {
@@ -50,6 +51,7 @@ describe('LoginPage', () => {
 
   beforeEach(async () => {
     auth.login.mockClear();
+    auth.loginAsGuest.mockClear();
     router.navigateByUrl.mockClear();
     await TestBed.configureTestingModule({
       imports: [LoginPage],
@@ -90,6 +92,17 @@ describe('LoginPage', () => {
     fixture.detectChanges();
     expect(input.type).toBe('text');
     expect(auth.login).not.toHaveBeenCalled();
+  });
+
+  it('starts a restricted guest session and enters the application', async () => {
+    const button = fixture.nativeElement.querySelector('.login-demo__link') as HTMLButtonElement;
+
+    expect(button.textContent?.replace(/\s+/g, ' ').trim()).toContain('Continue as Guest');
+    button.click();
+    await fixture.whenStable();
+
+    expect(auth.loginAsGuest).toHaveBeenCalledTimes(1);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 
   it('shows enabled language names with canonical display codes and no visible label', () => {

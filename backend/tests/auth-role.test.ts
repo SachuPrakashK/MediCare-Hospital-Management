@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../src/repositories/auth.repository.js', () => ({
   authRepository: {
     findUserById: vi.fn(),
+    findUserByEmail: vi.fn(),
   },
 }));
 
@@ -61,6 +62,15 @@ describe('database-backed authentication roles', () => {
     await expect(authService.me('user-id')).rejects.toMatchObject({
       statusCode: 403,
       code: 'ACCOUNT_ROLE_MISSING',
+    });
+  });
+
+  it('rejects guest login when the demo identity does not have only the GUEST role', async () => {
+    vi.mocked(authRepository.findUserByEmail).mockResolvedValue(databaseUser('DOCTOR') as never);
+
+    await expect(authService.demoLogin({})).rejects.toMatchObject({
+      statusCode: 503,
+      code: 'GUEST_ACCESS_UNAVAILABLE',
     });
   });
 });
