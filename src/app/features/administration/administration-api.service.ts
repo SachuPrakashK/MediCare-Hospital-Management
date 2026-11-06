@@ -76,8 +76,9 @@ export class AdministrationApiService {
     body.append('logo', file);
     return this.http.post<{ data: { url: string } }>('/api/v1/settings/hospital/logo', body);
   }
-  logo() {
+  logo(cacheKey = Date.now()) {
     return this.http.get('/api/v1/settings/hospital/logo', {
+      params: { v: cacheKey },
       responseType: 'blob',
       headers: { 'X-Handle-Error-Locally': 'true' },
     });

@@ -27,8 +27,7 @@
         ><label class="field"
           ><span class="form-label">Supplier</span
           ><select formControlName="supplierId">
-            <option value="" disabled>Select supplier</option>
-            <option value="">No supplier</option>
+            <option value="">Select supplier (optional)</option>
             @for (x of suppliers; track x.id) {
               <option [value]="x.id">{{ x.name }}</option>
             }

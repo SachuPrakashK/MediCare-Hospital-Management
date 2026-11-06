@@ -13,9 +13,11 @@ import { SearchField } from '../../shared/components/search/search-field';
 import { StatusBadge } from '../../shared/components/status-badge/status-badge';
 import { TableSortHeader } from '../../shared/components/table-sort-header/table-sort-header';
 import { TableColumnDefinition, TableSort } from '../../shared/models/table.models';
+import { AppDatePickerDirective } from '../../shared/components/date-picker/app-date-picker.directive';
 
 @Component({
   imports: [
+    AppDatePickerDirective,
     SearchField,
     AppPagination,
     EmptyState,
@@ -78,8 +80,8 @@ export class AuditPage {
       sortable: true,
       sortKey: 'entityType',
     },
-    { id: 'description', header: 'Details', visibleByDefault: true },
-    { id: 'ipAddress', header: 'IP address', visibleByDefault: true },
+    { id: 'description', header: 'Details', visibleByDefault: false },
+    { id: 'ipAddress', header: 'IP address', visibleByDefault: false },
     { id: 'actions', header: 'Actions', visibleByDefault: true, required: true },
   ];
   readonly visibleColumns = signal(this.tablePreferences.load('audit-log', this.columns));
@@ -177,6 +179,14 @@ export class AuditPage {
 
   format(value: string) {
     return this.dates.formatDateTime(value);
+  }
+
+  formatDate(value: string) {
+    return this.dates.formatDate(value);
+  }
+
+  formatTime(value: string) {
+    return this.dates.formatTime(value);
   }
 
   label(value: string) {

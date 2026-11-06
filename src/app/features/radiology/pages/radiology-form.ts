@@ -5,9 +5,10 @@ import { PatientStore } from '../../patients/patient.store';
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { MasterApiService } from '../../administration/master-api.service';
 import { firstValueFrom } from 'rxjs';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 @Component({
   selector: 'app-radiology-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AppDatePickerDirective],
   templateUrl: './radiology-form.html',
 })
 export class RadiologyForm implements OnChanges {

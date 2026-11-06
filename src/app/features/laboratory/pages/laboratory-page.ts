@@ -22,8 +22,10 @@ import { TableColumnDefinition } from '../../../shared/models/table.models';
 import { ColumnConfig } from '../../../shared/components/column-config/column-config';
 import { TablePreferencesService } from '../../../core/services/table-preferences.service';
 import { SummaryCard } from '../../../shared/components/summary-card/summary-card';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 @Component({
   imports: [
+    AppDatePickerDirective,
     AppModal,
     LaboratoryForm,
     RouterLink,

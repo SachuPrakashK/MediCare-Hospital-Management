@@ -8,9 +8,10 @@ import {
 } from '@angular/forms';
 import { PharmacyStore } from '../../../core/services/pharmacy.store';
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 @Component({
   selector: 'app-pharmacy-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AppDatePickerDirective],
   templateUrl: './pharmacy-form.html',
 })
 export class PharmacyForm implements OnChanges {

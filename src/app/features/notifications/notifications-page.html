@@ -4,11 +4,40 @@
     <h1>Notifications</h1>
     <p class="muted">Account and workflow updates relevant to you.</p>
   </div>
-  @if (store.unreadCount()) {
-    <button class="secondary" (click)="store.markAllRead()">Mark all as read</button>
-  }
+  <button
+    class="secondary"
+    [disabled]="store.actionInProgress() !== null || !store.notifications().length"
+    (click)="store.markAllRead()"
+  >
+    <app-icon name="check" [size]="17" />
+    {{ store.actionInProgress() === 'all' ? 'Updating…' : 'Mark all as read' }}
+  </button>
 </div>
+
 <section class="card notification-page">
+  <div class="notification-toolbar">
+    <app-search-field
+      placeholder="Search notifications"
+      label="Search notifications"
+      [value]="store.search()"
+      [disabled]="store.loading()"
+      (valueChange)="store.setSearch($event)"
+    />
+    <label class="notification-filter">
+      <span>Read status</span>
+      <select
+        aria-label="Filter notifications by read status"
+        [ngModel]="store.status()"
+        [disabled]="store.loading()"
+        (ngModelChange)="store.setStatus($event)"
+      >
+        <option value="all">All notifications</option>
+        <option value="unread">Unread only</option>
+        <option value="read">Read only</option>
+      </select>
+    </label>
+  </div>
+
   @if (store.loading()) {
     <div
       class="notification-state loading-state loading-state--section"
@@ -18,25 +47,51 @@
       Loading notifications…
     </div>
   } @else if (store.error()) {
-    <div class="notification-state error" role="alert">
-      {{ store.error() }} <button class="secondary" (click)="store.load()">Retry</button>
+    <div class="notification-state error-state" role="alert">
+      <app-icon name="help" [size]="20" />
+      <span>{{ store.error() }}</span>
+      <button class="secondary" (click)="store.load()">Retry</button>
     </div>
   } @else if (!store.notifications().length) {
     <app-empty-state
-      title="No notifications yet"
-      description="New notifications will appear here."
+      [title]="
+        store.search() || store.status() !== 'all'
+          ? 'No matching notifications'
+          : 'No notifications yet'
+      "
+      [description]="
+        store.search() || store.status() !== 'all'
+          ? 'Try changing your search or read-status filter.'
+          : 'New notifications will appear here.'
+      "
     />
   } @else {
-    @for (item of store.notifications(); track item.id) {
-      <button class="notification-row" [class.unread]="!item.isRead" (click)="store.markRead(item)">
-        <span class="notification-dot"></span
-        ><span
-          ><b>{{ item.title }}</b
-          ><small>{{ item.message }}</small
-          ><time>{{ item.createdAt | appDateTime }}</time></span
-        >
-      </button>
-    }
+    <div class="notification-list" role="list">
+      @for (item of store.notifications(); track item.id) {
+        <article class="notification-row" [class.unread]="!item.isRead" role="listitem">
+          <button class="notification-main" [disabled]="item.isRead" (click)="store.markRead(item)">
+            <span class="notification-icon" aria-hidden="true">
+              <app-icon name="notifications" [size]="18" />
+              <span class="notification-dot"></span>
+            </span>
+            <span class="notification-copy">
+              <b>{{ item.title }}</b>
+              <small>{{ item.message }}</small>
+              <time>{{ item.createdAt | appDateTime }}</time>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="notification-dismiss"
+            [disabled]="store.actionInProgress() !== null"
+            [attr.aria-label]="'Dismiss notification: ' + item.title"
+            (click)="store.dismiss(item)"
+          >
+            <app-icon name="close" [size]="17" />
+          </button>
+        </article>
+      }
+    </div>
   }
   <app-pagination
     [loading]="store.loading()"
@@ -45,7 +100,7 @@
     [totalItems]="store.pagination().total"
     [totalPages]="store.pagination().totalPages"
     itemLabel="notifications"
-    (pageChange)="store.changePage($event)"
-    (pageSizeChange)="store.changePageSize($event)"
+    (pageChange)="store.load($event)"
+    (pageSizeChange)="store.load(1, $event)"
   />
 </section>

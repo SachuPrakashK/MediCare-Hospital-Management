@@ -45,7 +45,7 @@
     }
     @if (canDownload()) {
       <button type="button" role="menuitem" (click)="choose($event, 'download')">
-        <app-icon name="download" [size]="16" />Download Invoice
+        <app-icon name="download" [size]="16" />{{ downloadLabel() }}
       </button>
     }
     @if (canReschedule()) {
@@ -70,7 +70,17 @@
       </button>
     }
     @if (canDelete()) {
-      <button type="button" role="menuitem" class="danger" (click)="choose($event, 'delete')">
+      <button
+        type="button"
+        role="menuitem"
+        class="danger"
+        [disabled]="deleteDisabled()"
+        [attr.title]="deleteDisabled() ? deleteDisabledReason() : null"
+        [attr.aria-label]="
+          deleteDisabled() ? 'Delete unavailable: ' + deleteDisabledReason() : deleteLabel()
+        "
+        (click)="choose($event, 'delete')"
+      >
         <app-icon name="trash" [size]="16" />{{ deleteLabel() }}
       </button>
     }

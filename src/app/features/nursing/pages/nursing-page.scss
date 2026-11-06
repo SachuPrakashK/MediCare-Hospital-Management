@@ -71,6 +71,33 @@ td small {
 .handover-history {
   margin-bottom: 24px;
 }
+.handover-history .actions-column {
+  width: 84px;
+  text-align: center;
+}
+.handover-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.handover-details > div {
+  min-width: 0;
+}
+.handover-details .full {
+  grid-column: 1 / -1;
+}
+.handover-details span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.handover-details p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
 .crud-modal__body.form-grid {
   padding: 20px 24px;
 }
@@ -89,6 +116,12 @@ td small {
   }
   .inline-actions button {
     flex: 1;
+  }
+  .handover-details {
+    grid-template-columns: 1fr;
+  }
+  .handover-details .full {
+    grid-column: auto;
   }
 }
 .patient {

@@ -63,6 +63,9 @@ export class InpatientApiService {
   update(id: string, v: any) {
     return this.http.put<{ data: any }>(`/api/v1/admissions/${id}`, v);
   }
+  remove(id: string) {
+    return this.http.delete<{ data: null; message: string }>(`/api/v1/admissions/${id}`);
+  }
   transfer(id: string, toBedId: string, reason = '') {
     return this.http.post<{ data: any }>(`/api/v1/admissions/${id}/transfer`, { toBedId, reason });
   }
@@ -96,6 +99,12 @@ export class InpatientApiService {
   }
   createHandover(value: any) {
     return this.http.post<{ data: any }>('/api/v1/nursing/handovers', value);
+  }
+  updateHandover(id: string, value: any) {
+    return this.http.put<{ data: any }>(`/api/v1/nursing/handovers/${id}`, value);
+  }
+  deleteHandover(id: string) {
+    return this.http.delete<void>(`/api/v1/nursing/handovers/${id}`);
   }
   acknowledgeHandover(id: string) {
     return this.http.post<{ data: any }>(`/api/v1/nursing/handovers/${id}/acknowledge`, {});

@@ -384,7 +384,7 @@
               </th>
             }
             @if (visible('handover', 'actions')) {
-              <th>Action</th>
+              <th class="actions-column">Actions</th>
             }
           </tr>
         </thead>
@@ -418,12 +418,24 @@
                 <td><app-status-badge [value]="handover.status" /></td>
               }
               @if (visible('handover', 'actions')) {
-                <td>
-                  @if (handover.status === 'PENDING' && canEdit()) {
-                    <button class="secondary" type="button" (click)="acknowledge(handover.id)">
-                      Acknowledge
-                    </button>
-                  }
+                <td class="actions actions-column">
+                  <app-actions-menu
+                    [id]="handover.id"
+                    [label]="'Actions for shift handover ' + handover.id"
+                    [canView]="true"
+                    [canEdit]="canEdit()"
+                    [editDisabled]="!canManageHandover(handover)"
+                    editDisabledReason="Only pending handovers created by you can be edited."
+                    [canDelete]="canEdit()"
+                    [deleteDisabled]="!canManageHandover(handover)"
+                    deleteDisabledReason="Only pending handovers created by you can be deleted."
+                    [canStatus]="handover.status === 'PENDING' && canEdit()"
+                    statusLabel="Acknowledge"
+                    (view)="viewHandover(handover)"
+                    (edit)="editHandover(handover)"
+                    (delete)="deleteHandover(handover)"
+                    (statusChange)="acknowledge(handover.id)"
+                  />
                 </td>
               }
             </tr>
@@ -439,6 +451,110 @@
   }
 </section>
 
+@if (handoverDetails(); as handover) {
+  <div class="modal-overlay">
+    <section
+      class="crud-modal crud-modal--md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="handover-details-title"
+    >
+      <header class="crud-modal__header">
+        <div class="crud-modal__heading">
+          <span class="crud-modal__header-icon" aria-hidden="true"
+            ><app-icon name="nursing" [size]="21"
+          /></span>
+          <div>
+            <h2 id="handover-details-title">Shift handover details</h2>
+            <p>{{ handover.fromShift }} → {{ handover.toShift }}</p>
+          </div>
+        </div>
+        <button
+          class="modal-close"
+          type="button"
+          aria-label="Close"
+          (click)="handoverDetails.set(null)"
+        >
+          <app-icon name="close" />
+        </button>
+      </header>
+      <div class="crud-modal__body handover-details">
+        <div>
+          <span>Patient</span
+          ><strong
+            >{{ handover.admission?.patient?.firstName }}
+            {{ handover.admission?.patient?.lastName }}</strong
+          >
+        </div>
+        <div><span>Status</span><app-status-badge [value]="handover.status" /></div>
+        <div>
+          <span>Handed over by</span
+          ><strong
+            >{{ handover.handedOverBy?.firstName }} {{ handover.handedOverBy?.lastName }}</strong
+          >
+        </div>
+        <div>
+          <span>Received by</span
+          ><strong
+            >{{ handover.handedOverTo?.firstName || 'Not assigned' }}
+            {{ handover.handedOverTo?.lastName }}</strong
+          >
+        </div>
+        <div class="full">
+          <span>Clinical summary</span>
+          <p>{{ handover.clinicalSummary }}</p>
+        </div>
+        <div class="full">
+          <span>Current condition</span>
+          <p>{{ handover.currentCondition }}</p>
+        </div>
+        @if (handover.importantObservations) {
+          <div class="full">
+            <span>Important observations</span>
+            <p>{{ handover.importantObservations }}</p>
+          </div>
+        }
+        @if (handover.pendingTasks) {
+          <div class="full">
+            <span>Pending tasks</span>
+            <p>{{ handover.pendingTasks }}</p>
+          </div>
+        }
+        @if (handover.medicationNotes) {
+          <div class="full">
+            <span>Medication notes</span>
+            <p>{{ handover.medicationNotes }}</p>
+          </div>
+        }
+        @if (handover.investigationsPending) {
+          <div class="full">
+            <span>Investigations pending</span>
+            <p>{{ handover.investigationsPending }}</p>
+          </div>
+        }
+        @if (handover.specialInstructions) {
+          <div class="full">
+            <span>Special instructions</span>
+            <p>{{ handover.specialInstructions }}</p>
+          </div>
+        }
+        @if (handover.riskAlerts) {
+          <div class="full">
+            <span>Risk / alerts</span>
+            <p>{{ handover.riskAlerts }}</p>
+          </div>
+        }
+        @if (handover.additionalNotes) {
+          <div class="full">
+            <span>Additional notes</span>
+            <p>{{ handover.additionalNotes }}</p>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+}
+
 @if (medicationDialog(); as item) {
   <div class="modal-overlay">
     <section
@@ -448,11 +564,18 @@
       aria-labelledby="mar-title"
     >
       <header class="crud-modal__header">
-        <div>
-          <h2 id="mar-title">Record medication administration</h2>
-          <p class="muted">{{ item.medication }} · {{ item.dose }} · {{ item.route }}</p>
+        <div class="crud-modal__heading">
+          <span class="crud-modal__header-icon" aria-hidden="true"
+            ><app-icon name="nursing" [size]="21"
+          /></span>
+          <div>
+            <h2 id="mar-title">Record medication administration</h2>
+            <p>{{ item.medication }} · {{ item.dose }} · {{ item.route }}</p>
+          </div>
         </div>
-        <button type="button" aria-label="Close" (click)="closeMedication()">×</button>
+        <button class="modal-close" type="button" aria-label="Close" (click)="closeMedication()">
+          <app-icon name="close" />
+        </button>
       </header>
       <form class="crud-modal__form" [formGroup]="medicationForm" (ngSubmit)="recordMedication()">
         <div class="crud-modal__body form-grid">
@@ -497,11 +620,26 @@
       aria-labelledby="handover-title"
     >
       <header class="crud-modal__header">
-        <div>
-          <h2 id="handover-title">Shift handover</h2>
-          <p class="muted">Record a patient-specific handover for the incoming shift.</p>
+        <div class="crud-modal__heading">
+          <span class="crud-modal__header-icon" aria-hidden="true"
+            ><app-icon name="nursing" [size]="21"
+          /></span>
+          <div>
+            <h2 id="handover-title">
+              {{ handoverEditing() ? 'Edit shift handover' : 'Shift handover' }}
+            </h2>
+            <p>
+              {{
+                handoverEditing()
+                  ? 'Update this pending handover for the incoming shift.'
+                  : 'Record a patient-specific handover for the incoming shift.'
+              }}
+            </p>
+          </div>
         </div>
-        <button type="button" aria-label="Close" (click)="closeHandover()">×</button>
+        <button class="modal-close" type="button" aria-label="Close" (click)="closeHandover()">
+          <app-icon name="close" />
+        </button>
       </header>
       <form class="crud-modal__form" [formGroup]="handoverForm" (ngSubmit)="submitHandover()">
         <div class="crud-modal__body form-grid">
@@ -538,7 +676,7 @@
           <label class="field full"
             ><span class="form-label">Receiving nurse</span
             ><select formControlName="handedOverToId">
-              <option value="">Not assigned</option>
+              <option value="" disabled>Select receiving nurse</option>
               @for (nurse of store.nursingStaff(); track nurse.id) {
                 <option [value]="nurse.id">{{ nurse.firstName }} {{ nurse.lastName }}</option>
               }
@@ -547,36 +685,57 @@
           <label class="field"
             ><span class="form-label"
               >Clinical summary <span class="required-indicator">*</span></span
-            ><textarea formControlName="clinicalSummary"></textarea></label
+            ><textarea
+              formControlName="clinicalSummary"
+              placeholder="Enter clinical summary"
+            ></textarea></label
           ><label class="field"
             ><span class="form-label"
               >Current condition <span class="required-indicator">*</span></span
-            ><textarea formControlName="currentCondition"></textarea>
+            ><textarea
+              formControlName="currentCondition"
+              placeholder="Enter current condition"
+            ></textarea>
           </label>
           <label class="field"
             ><span class="form-label">Important observations</span
-            ><textarea formControlName="importantObservations"></textarea></label
+            ><textarea
+              formControlName="importantObservations"
+              placeholder="Enter important observations"
+            ></textarea></label
           ><label class="field"
             ><span class="form-label">Pending tasks</span
-            ><textarea formControlName="pendingTasks"></textarea>
+            ><textarea formControlName="pendingTasks" placeholder="Enter pending tasks"></textarea>
           </label>
           <label class="field"
             ><span class="form-label">Medication notes</span
-            ><textarea formControlName="medicationNotes"></textarea></label
+            ><textarea
+              formControlName="medicationNotes"
+              placeholder="Enter medication notes"
+            ></textarea></label
           ><label class="field"
             ><span class="form-label">Investigations pending</span
-            ><textarea formControlName="investigationsPending"></textarea>
+            ><textarea
+              formControlName="investigationsPending"
+              placeholder="Enter pending investigations"
+            ></textarea>
           </label>
           <label class="field"
             ><span class="form-label">Special instructions</span
-            ><textarea formControlName="specialInstructions"></textarea></label
+            ><textarea
+              formControlName="specialInstructions"
+              placeholder="Enter special instructions"
+            ></textarea></label
           ><label class="field"
             ><span class="form-label">Risk / alerts</span
-            ><textarea formControlName="riskAlerts"></textarea>
+            ><textarea formControlName="riskAlerts" placeholder="Enter risks or alerts"></textarea>
           </label>
           <label class="field full"
             ><span class="form-label">Additional notes</span
-            ><textarea formControlName="additionalNotes"></textarea>
+            ><textarea
+              formControlName="additionalNotes"
+              placeholder="Enter additional handover notes"
+            ></textarea>
           </label>
           @if (handoverForm.value.fromShift === handoverForm.value.toShift) {
             <p class="field-error full">From shift and to shift must be different.</p>
@@ -595,7 +754,13 @@
               handoverSubmitting()
             "
           >
-            {{ handoverSubmitting() ? 'Submitting…' : 'Submit handover' }}
+            {{
+              handoverSubmitting()
+                ? 'Saving…'
+                : handoverEditing()
+                  ? 'Update handover'
+                  : 'Submit handover'
+            }}
           </button>
         </footer>
       </form>

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
+import { AppDatePickerDirective } from '../../shared/components/date-picker/app-date-picker.directive';
 import { SafeApiError } from '../../core/interceptors/api-error.interceptor';
 import {
   StaffDirectoryApiService,
@@ -18,7 +19,7 @@ import {
 } from './staff-directory-api.service';
 @Component({
   selector: 'app-staff-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AppDatePickerDirective],
   templateUrl: './staff-form.html',
   styleUrl: './staff-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

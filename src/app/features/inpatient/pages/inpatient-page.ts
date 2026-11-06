@@ -18,6 +18,8 @@ import { ColumnConfig } from '../../../shared/components/column-config/column-co
 import { TableColumnDefinition, TableSort } from '../../../shared/models/table.models';
 import { TablePreferencesService } from '../../../core/services/table-preferences.service';
 import { SummaryCard } from '../../../shared/components/summary-card/summary-card';
+import { AppActionsMenu } from '../../../shared/components/actions-menu/app-actions-menu';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 
 @Component({
   imports: [
@@ -33,6 +35,7 @@ import { SummaryCard } from '../../../shared/components/summary-card/summary-car
     TableSortHeader,
     ColumnConfig,
     SummaryCard,
+    AppActionsMenu,
   ],
   templateUrl: './inpatient-page.html',
   styleUrl: './inpatient-page.scss',
@@ -45,6 +48,7 @@ export class InpatientPage {
   private router = inject(Router);
   private fb = inject(FormBuilder);
   private toast = inject(ToastService);
+  private confirmation = inject(ConfirmationService);
   private tablePreferences = inject(TablePreferencesService);
   readonly tab = signal<'admissions' | 'beds' | 'wards'>('admissions');
   readonly search = signal('');
@@ -55,6 +59,10 @@ export class InpatientPage {
   readonly page = signal(1);
   readonly pageSize = signal(10);
   readonly exporting = signal(false);
+  readonly editing = signal<any | null>(null);
+  readonly editSubmitting = signal(false);
+  readonly editError = signal('');
+  readonly deletingId = signal('');
   readonly sort = signal<TableSort | null>(null);
   readonly columns: readonly TableColumnDefinition[] = [
     {
@@ -110,6 +118,10 @@ export class InpatientPage {
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     floor: ['', [Validators.required, Validators.maxLength(50)]],
     status: ['Active', Validators.required],
+  });
+  readonly editForm = this.fb.nonNullable.group({
+    reason: ['', [Validators.required, Validators.maxLength(2000)]],
+    initialDiagnosis: ['', [Validators.required, Validators.maxLength(2000)]],
   });
   occupancy() {
     const total = this.store.beds().length;
@@ -217,6 +229,63 @@ export class InpatientPage {
   }
   viewAdmission(id: string) {
     void this.router.navigate(['/inpatient', id]);
+  }
+  rowKeydown(event: Event, id: string) {
+    if (event.target === event.currentTarget) this.viewAdmission(id);
+  }
+  openEdit(admission: any) {
+    this.editForm.reset({
+      reason: admission.reason ?? '',
+      initialDiagnosis: admission.initialDiagnosis ?? '',
+    });
+    this.editForm.markAsPristine();
+    this.editError.set('');
+    this.editing.set(admission);
+  }
+  async saveAdmission() {
+    const admission = this.editing();
+    this.editForm.markAllAsTouched();
+    if (!admission || this.editForm.invalid || this.editSubmitting()) return;
+    this.editSubmitting.set(true);
+    this.editError.set('');
+    try {
+      await this.store.updateAdmission(admission.id, this.editForm.getRawValue());
+      this.editForm.markAsPristine();
+      this.editing.set(null);
+      await this.loadAdmissions();
+      this.toast.success('Admission updated successfully.');
+    } catch (error: any) {
+      this.editError.set(
+        error?.error?.message ?? error?.message ?? 'Admission could not be updated.',
+      );
+    } finally {
+      this.editSubmitting.set(false);
+    }
+  }
+  async deleteAdmission(admission: any) {
+    if (this.deletingId()) return;
+    const confirmed = await this.confirmation.confirm({
+      title: 'Delete admission?',
+      message:
+        'This admission will be removed from operational lists and any active bed will be released. Clinical and audit history will be retained.',
+      confirmLabel: 'Delete admission',
+      danger: true,
+      context: admission.number,
+      icon: 'trash',
+    });
+    if (!confirmed) return;
+    this.deletingId.set(admission.id);
+    try {
+      await this.store.removeAdmission(admission.id);
+      await this.loadAdmissions();
+      this.toast.success('Admission deleted. Historical records were retained.');
+    } catch (error: any) {
+      this.toast.error(
+        error?.error?.message ?? error?.message ?? 'Admission could not be deleted.',
+      );
+    } finally {
+      this.deletingId.set('');
+    }
   }
   export() {
     if (this.exporting() || !this.store.admissions().length) return;

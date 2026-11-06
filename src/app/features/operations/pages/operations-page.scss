@@ -65,32 +65,6 @@ tbody tr:hover {
 .booking {
   margin-top: 18px;
 }
-.notification {
-  display: grid;
-  grid-template-columns: 35px 1fr;
-  gap: 12px;
-  padding: 15px 18px;
-  border-bottom: 1px solid var(--mc-border);
-  cursor: pointer;
-}
-.notification.unread {
-  background: var(--mc-surface-soft);
-}
-.notification p {
-  margin: 4px 0;
-}
-.notification small {
-  color: var(--mc-text-secondary);
-}
-.notice-icon {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #ffe8c2;
-  color: #855700;
-}
 .toast {
   position: fixed;
   right: 24px;

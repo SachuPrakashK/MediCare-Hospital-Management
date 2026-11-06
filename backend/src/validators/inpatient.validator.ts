@@ -84,3 +84,8 @@ export const handoverCreateSchema = z.object({
 export const handoverAcknowledgeSchema = z.object({
   params: z.object({ id: uuid }),
 });
+
+export const handoverUpdateSchema = z.object({
+  params: z.object({ id: uuid }),
+  body: handoverCreateSchema.shape.body,
+});

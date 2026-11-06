@@ -129,7 +129,7 @@
               </th>
             }
             @if (columnVisible('module')) {
-              <th [attr.aria-sort]="ariaSort('module')">
+              <th class="audit-col-module" [attr.aria-sort]="ariaSort('module')">
                 <app-table-sort-header
                   label="Module"
                   field="module"
@@ -139,7 +139,7 @@
               </th>
             }
             @if (columnVisible('action')) {
-              <th [attr.aria-sort]="ariaSort('action')">
+              <th class="audit-col-action" [attr.aria-sort]="ariaSort('action')">
                 <app-table-sort-header
                   label="Action"
                   field="action"
@@ -149,7 +149,7 @@
               </th>
             }
             @if (columnVisible('target')) {
-              <th [attr.aria-sort]="ariaSort('entityType')">
+              <th class="audit-col-target" [attr.aria-sort]="ariaSort('entityType')">
                 <app-table-sort-header
                   label="Affected resource"
                   field="entityType"
@@ -179,10 +179,13 @@
               (keydown.space)="$event.preventDefault(); open(event)"
             >
               @if (columnVisible('date')) {
-                <td class="audit-date">{{ format(event.createdAt) }}</td>
+                <td class="audit-date" [title]="format(event.createdAt)">
+                  <span>{{ formatDate(event.createdAt) }}</span>
+                  <small>{{ formatTime(event.createdAt) }}</small>
+                </td>
               }
               @if (columnVisible('user')) {
-                <td>
+                <td class="audit-user-cell">
                   <span class="audit-primary-text" [title]="event.actor">{{ event.actor }}</span>
                   @if (event.actorEmail) {
                     <small [title]="event.actorEmail">{{ event.actorEmail }}</small>
@@ -190,15 +193,15 @@
                 </td>
               }
               @if (columnVisible('module')) {
-                <td>
+                <td class="audit-module-cell">
                   <span class="audit-module">{{ label(event.module) }}</span>
                 </td>
               }
               @if (columnVisible('action')) {
-                <td><app-status-badge [value]="event.action" /></td>
+                <td class="audit-action-cell"><app-status-badge [value]="event.action" /></td>
               }
               @if (columnVisible('target')) {
-                <td>
+                <td class="audit-target-cell">
                   <span class="audit-primary-text" [title]="event.entityType">{{
                     label(event.entityType)
                   }}</span
@@ -208,7 +211,7 @@
                 </td>
               }
               @if (columnVisible('description')) {
-                <td>
+                <td class="audit-details-cell">
                   <span class="audit-detail-preview" [title]="description(event)">{{
                     description(event)
                   }}</span>

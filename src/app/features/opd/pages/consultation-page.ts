@@ -2,8 +2,9 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ClinicalStore } from '../../../core/services/clinical.store';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AppDatePickerDirective],
   templateUrl: './consultation-page.html',
   styleUrl: './consultation-page.scss',
 })

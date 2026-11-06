@@ -13,6 +13,9 @@ import { TableColumnDefinition, TableSort } from '../../../shared/models/table.m
 import { TablePreferencesService } from '../../../core/services/table-preferences.service';
 import { sortTableRows } from '../../../shared/utils/table-sort';
 import { SummaryCard } from '../../../shared/components/summary-card/summary-card';
+import { AppIcon } from '../../../shared/components/icon/app-icon';
+import { AppActionsMenu } from '../../../shared/components/actions-menu/app-actions-menu';
+import { ConfirmationService } from '../../../core/services/confirmation.service';
 
 @Component({
   imports: [
@@ -22,6 +25,8 @@ import { SummaryCard } from '../../../shared/components/summary-card/summary-car
     TableSortHeader,
     ColumnConfig,
     SummaryCard,
+    AppIcon,
+    AppActionsMenu,
   ],
   templateUrl: './nursing-page.html',
   styleUrl: './nursing-page.scss',
@@ -34,6 +39,7 @@ export class NursingPage {
   private router = inject(Router);
   private fb = inject(FormBuilder);
   private preferences = inject(TablePreferencesService);
+  private confirmation = inject(ConfirmationService);
 
   readonly selected = signal('');
   readonly savingNote = signal(false);
@@ -41,6 +47,8 @@ export class NursingPage {
   readonly handoverSubmitting = signal(false);
   readonly medicationDialog = signal<any | null>(null);
   readonly handoverDialog = signal(false);
+  readonly handoverEditing = signal<any | null>(null);
+  readonly handoverDetails = signal<any | null>(null);
   readonly noteError = signal('');
   readonly medicationError = signal('');
   readonly handoverError = signal('');
@@ -294,6 +302,7 @@ export class NursingPage {
   }
 
   openHandover() {
+    this.handoverEditing.set(null);
     this.handoverError.set('');
     this.handoverForm.reset({
       admissionId: this.selected(),
@@ -314,7 +323,66 @@ export class NursingPage {
   }
 
   closeHandover() {
-    if (!this.handoverSubmitting()) this.handoverDialog.set(false);
+    if (!this.handoverSubmitting()) {
+      this.handoverDialog.set(false);
+      this.handoverEditing.set(null);
+    }
+  }
+
+  viewHandover(handover: any) {
+    this.handoverDetails.set(handover);
+  }
+
+  editHandover(handover: any) {
+    if (!this.canManageHandover(handover)) return;
+    this.handoverError.set('');
+    this.handoverEditing.set(handover);
+    this.handoverForm.reset({
+      admissionId: handover.admissionId,
+      fromShift: handover.fromShift,
+      toShift: handover.toShift,
+      handedOverToId: handover.handedOverToId ?? '',
+      clinicalSummary: handover.clinicalSummary,
+      currentCondition: handover.currentCondition,
+      importantObservations: handover.importantObservations ?? '',
+      pendingTasks: handover.pendingTasks ?? '',
+      medicationNotes: handover.medicationNotes ?? '',
+      investigationsPending: handover.investigationsPending ?? '',
+      specialInstructions: handover.specialInstructions ?? '',
+      riskAlerts: handover.riskAlerts ?? '',
+      additionalNotes: handover.additionalNotes ?? '',
+    });
+    this.handoverDialog.set(true);
+  }
+
+  canManageHandover(handover: any) {
+    const user = this.auth.user();
+    return (
+      this.canEdit() &&
+      handover.status === 'PENDING' &&
+      (handover.handedOverById === user?.id ||
+        !!user?.roles.some((role) => role.code === 'HOSPITAL_ADMIN'))
+    );
+  }
+
+  async deleteHandover(handover: any) {
+    if (
+      !this.canManageHandover(handover) ||
+      !(await this.confirmation.confirm({
+        title: 'Delete shift handover?',
+        message:
+          'This pending handover will be permanently removed. Acknowledged handovers remain protected as clinical history.',
+        confirmLabel: 'Delete handover',
+        danger: true,
+      }))
+    )
+      return;
+    try {
+      await this.store.deleteHandover(handover.id);
+      this.toast.success('Shift handover deleted.');
+    } catch (error: any) {
+      this.toast.error(error?.error?.message ?? 'The shift handover could not be deleted.');
+    }
   }
 
   async submitHandover() {
@@ -325,9 +393,15 @@ export class NursingPage {
     this.handoverSubmitting.set(true);
     this.handoverError.set('');
     try {
-      await this.store.createHandover({ ...value, handedOverToId: value.handedOverToId || null });
+      const payload = { ...value, handedOverToId: value.handedOverToId || null };
+      if (this.handoverEditing())
+        await this.store.updateHandover(this.handoverEditing().id, payload);
+      else await this.store.createHandover(payload);
       this.handoverDialog.set(false);
-      this.toast.success('Shift handover recorded.');
+      this.toast.success(
+        this.handoverEditing() ? 'Shift handover updated.' : 'Shift handover recorded.',
+      );
+      this.handoverEditing.set(null);
     } catch (error: any) {
       const message = error?.error?.message ?? 'The shift handover could not be recorded.';
       this.handoverError.set(message);

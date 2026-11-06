@@ -66,6 +66,12 @@ inpatientRoutes.put(
   validate(v.admissionUpdateSchema),
   c.update,
 );
+inpatientRoutes.delete(
+  '/admissions/:id',
+  requirePermissions('admissions.manage'),
+  validate(v.admissionIdSchema),
+  c.remove,
+);
 inpatientRoutes.post(
   '/admissions/:id/transfer',
   requirePermissions('admissions.transfer'),
@@ -159,6 +165,18 @@ inpatientRoutes.post(
   requirePermissions('nursing.edit'),
   validate(v.handoverCreateSchema),
   c.createHandover,
+);
+inpatientRoutes.put(
+  '/nursing/handovers/:id',
+  requirePermissions('nursing.edit'),
+  validate(v.handoverUpdateSchema),
+  c.updateHandover,
+);
+inpatientRoutes.delete(
+  '/nursing/handovers/:id',
+  requirePermissions('nursing.edit'),
+  validate(v.handoverAcknowledgeSchema),
+  c.deleteHandover,
 );
 inpatientRoutes.post(
   '/nursing/handovers/:id/acknowledge',

@@ -153,17 +153,16 @@
                 <td class="actions">
                   <app-actions-menu
                     [id]="d.id"
+                    [label]="'Actions for ' + d.name"
+                    [canView]="auth.has('documents.download') && downloadingId() !== d.id"
                     [canEdit]="false"
                     [canDelete]="auth.has('documents.delete')"
-                    (view)="store.download(d.id, true)"
+                    [canDownload]="auth.has('documents.download') && downloadingId() !== d.id"
+                    downloadLabel="Download"
+                    (view)="download(d.id, true)"
+                    (download)="download(d.id)"
                     (delete)="remove(d.id)"
-                  /><button
-                    class="ghost"
-                    [disabled]="!auth.has('documents.download')"
-                    (click)="store.download(d.id)"
-                  >
-                    Download
-                  </button>
+                  />
                 </td>
               }
             </tr>

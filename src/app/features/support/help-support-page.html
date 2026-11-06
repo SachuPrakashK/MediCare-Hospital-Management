@@ -47,7 +47,7 @@
     />
   </div>
   @if (articleCategories().length) {
-    <div class="tabs" role="tablist" aria-label="Help article categories">
+    <div class="tabs help-category-tabs" role="tablist" aria-label="Help article categories">
       <button
         type="button"
         role="tab"
@@ -161,7 +161,7 @@
 </section>
 
 <section id="support-tickets" class="card ticket-card">
-  <div class="toolbar support-toolbar">
+  <div class="support-requests-heading">
     <div>
       <h2>{{ canManage ? 'All support requests' : 'My support requests' }}</h2>
       <p class="muted">
@@ -172,14 +172,16 @@
         }}
       </p>
     </div>
+  </div>
+  <div class="toolbar support-toolbar" aria-label="Support request tools">
+    <app-search-field
+      placeholder="Search tickets..."
+      label="Search support tickets"
+      [value]="ticketSearch()"
+      [disabled]="ticketsLoading()"
+      (valueChange)="queryTickets($event)"
+    />
     <div class="toolbar-actions">
-      <app-search-field
-        placeholder="Search tickets..."
-        label="Search support tickets"
-        [value]="ticketSearch()"
-        [disabled]="ticketsLoading()"
-        (valueChange)="queryTickets($event)"
-      />
       <app-shared-filter
         [disabled]="ticketsLoading() || !!ticketsError() || total() === 0"
         [activeCount]="activeTicketFilters()"
@@ -480,60 +482,102 @@
   <app-modal
     [title]="ticket.ticketNumber"
     [description]="ticket.subject"
-    size="lg"
+    icon="help"
+    size="xl"
     (closed)="selectedTicket.set(null)"
   >
-    <div class="crud-modal__body ticket-details">
-      <dl class="ticket-facts">
-        <div>
-          <dt>Status</dt>
-          <dd><app-status-badge [value]="ticket.status" /></dd>
-        </div>
-        <div>
-          <dt>Priority</dt>
-          <dd>{{ ticket.priority }}</dd>
-        </div>
-        <div>
-          <dt>Module</dt>
-          <dd>{{ ticket.module }}</dd>
-        </div>
-        <div>
-          <dt>Issue type</dt>
-          <dd>{{ ticket.issueType }}</dd>
-        </div>
-        <div>
-          <dt>Created</dt>
-          <dd>{{ dates.formatDate(ticket.createdAt) }}</dd>
-        </div>
-        <div>
-          <dt>Updated</dt>
-          <dd>{{ dates.formatDate(ticket.updatedAt) }}</dd>
-        </div>
-      </dl>
-      <section>
-        <h3>Description</h3>
-        <p class="ticket-description">{{ ticket.description }}</p>
-      </section>
-      <section>
-        <h3>Status history</h3>
-        <ol class="ticket-history">
-          @for (event of ticket.history ?? []; track event.id) {
-            <li>
-              <span></span>
-              <div>
-                <b>{{ event.status.replace('_', ' ') }}</b
-                ><small
-                  >{{ dates.formatDate(event.createdAt) }} · {{ event.actor.firstName }}
-                  {{ event.actor.lastName }}</small
-                >
-              </div>
-            </li>
-          }
-        </ol>
-      </section>
+    <div class="ticket-details-modal">
+      <div class="crud-modal__body ticket-details">
+        <section class="ticket-summary" aria-labelledby="ticket-summary-title">
+          <h3 id="ticket-summary-title">Request summary</h3>
+          <dl class="ticket-facts">
+            <div>
+              <dt>Ticket ID</dt>
+              <dd>{{ ticket.ticketNumber }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                @if (canManage) {
+                  <select
+                    class="status-select"
+                    [value]="ticket.status"
+                    [disabled]="updatingTicket() === ticket.id"
+                    aria-label="Update ticket status"
+                    (change)="updateStatus(ticket, $any($event.target).value)"
+                  >
+                    <option value="OPEN">Open</option>
+                    <option value="IN_PROGRESS">In progress</option>
+                    <option value="RESOLVED">Resolved</option>
+                    <option value="CLOSED">Closed</option>
+                  </select>
+                } @else {
+                  <app-status-badge [value]="ticket.status" />
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Priority</dt>
+              <dd>
+                <span class="priority priority--{{ ticket.priority.toLowerCase() }}">{{
+                  ticket.priority
+                }}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Module</dt>
+              <dd>{{ ticket.module }}</dd>
+            </div>
+            <div>
+              <dt>Issue type</dt>
+              <dd>{{ ticket.issueType }}</dd>
+            </div>
+            <div>
+              <dt>Requester</dt>
+              <dd>{{ ticket.requester?.firstName }} {{ ticket.requester?.lastName }}</dd>
+            </div>
+            <div>
+              <dt>Assigned staff</dt>
+              <dd>
+                {{
+                  ticket.assignedTo
+                    ? ticket.assignedTo.firstName + ' ' + ticket.assignedTo.lastName
+                    : 'Unassigned'
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ dates.formatDateTime(ticket.createdAt) }}</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>{{ dates.formatDateTime(ticket.updatedAt) }}</dd>
+            </div>
+          </dl>
+        </section>
+        <section class="ticket-section">
+          <h3>Description</h3>
+          <p class="ticket-description">{{ ticket.description }}</p>
+        </section>
+        <section class="ticket-section">
+          <h3>Status history</h3>
+          <ol class="ticket-history">
+            @for (event of ticket.history ?? []; track event.id) {
+              <li>
+                <span></span>
+                <div>
+                  <b>{{ event.status.replace('_', ' ') }}</b
+                  ><small
+                    >{{ dates.formatDateTime(event.createdAt) }} · {{ event.actor.firstName }}
+                    {{ event.actor.lastName }}</small
+                  >
+                </div>
+              </li>
+            }
+          </ol>
+        </section>
+      </div>
     </div>
-    <footer class="crud-modal__footer">
-      <button type="button" class="secondary" (click)="selectedTicket.set(null)">Close</button>
-    </footer>
   </app-modal>
 }

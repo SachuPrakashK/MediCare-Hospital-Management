@@ -6,29 +6,55 @@
     </div>
   </div>
   <div class="logo-setting">
-    <div class="logo-preview">
-      @if (!state.logoError() && state.logoUrl()) {
-        <img [src]="state.logoUrl()" alt="Hospital logo" />
-      } @else {
-        <span>No logo uploaded</span>
-      }
+    <div class="current-logo">
+      <span class="logo-preview-label">Current logo</span>
+      <div
+        class="logo-preview"
+        [class.logo-preview--empty]="!state.logoLoading() && !state.logoUrl()"
+        [attr.aria-busy]="state.logoLoading()"
+      >
+        @if (state.logoLoading()) {
+          <span class="logo-placeholder" role="status">Loading logo…</span>
+        } @else if (state.logoUrl()) {
+          <img [src]="state.logoUrl()" alt="Current hospital logo" (error)="state.logoFailed()" />
+        } @else {
+          <span class="logo-placeholder">
+            <app-icon name="documents" [size]="22" />
+            <strong>No hospital logo uploaded</strong>
+          </span>
+        }
+      </div>
     </div>
-    <label class="secondary button-link"
-      >{{ state.uploadingLogo() ? 'Uploading...' : 'Upload logo'
-      }}<input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        [disabled]="state.uploadingLogo()"
-        (change)="state.uploadLogo($event)"
-    /></label>
-    <button
-      type="button"
-      class="danger"
-      [disabled]="state.uploadingLogo() || state.logoError()"
-      (click)="state.deleteLogo()"
-    >
-      Delete logo
-    </button>
+    <div class="logo-management">
+      <div class="logo-management__copy">
+        <h3>Hospital logo</h3>
+        <p>Displayed in hospital branding and supported application documents.</p>
+      </div>
+      <div class="logo-actions">
+        <label class="secondary button-link">
+          <app-icon name="documents" [size]="17" />
+          {{
+            state.uploadingLogo() ? 'Uploading…' : state.logoUrl() ? 'Replace logo' : 'Upload logo'
+          }}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            [disabled]="state.uploadingLogo()"
+            (change)="state.uploadLogo($event)"
+          />
+        </label>
+        <button
+          type="button"
+          class="danger"
+          [disabled]="state.uploadingLogo() || state.logoLoading() || !state.logoUrl()"
+          (click)="state.deleteLogo()"
+        >
+          <app-icon name="trash" [size]="17" />
+          Delete logo
+        </button>
+      </div>
+      <small class="logo-help">JPEG, PNG or WebP. Maximum file size: 2 MB.</small>
+    </div>
   </div>
   <div class="form-grid">
     <label class="field"

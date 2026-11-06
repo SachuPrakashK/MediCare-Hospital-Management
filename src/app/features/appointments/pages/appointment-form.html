@@ -91,10 +91,10 @@
         }
       } @else {
         <div class="form-grid provisional-grid">
-          <label class="field"
-            ><span class="form-label">First name <span class="required-indicator">*</span></span
-            ><input formControlName="firstName" placeholder="First name"
-          /></label>
+          <div class="field">
+            <span class="form-label">First name <span class="required-indicator">*</span></span
+            ><input formControlName="firstName" placeholder="First name" />
+          </div>
           <label class="field"
             ><span class="form-label">Middle name</span
             ><input formControlName="middleName" placeholder="Middle name (optional)"
@@ -117,10 +117,15 @@
               <option>Prefer not to say</option>
             </select></label
           >
-          <label class="field"
-            ><span class="form-label">Date of birth <span class="required-indicator">*</span></span
-            ><input type="date" formControlName="dob" [max]="dates.today()"
-          /></label>
+          <div class="field">
+            <span class="form-label">Date of birth <span class="required-indicator">*</span></span
+            ><app-date-picker
+              formControlName="dob"
+              placeholder="Select date of birth"
+              ariaLabel="Date of birth"
+              [max]="dates.today()"
+            />
+          </div>
         </div>
       }
     </section>
@@ -161,10 +166,15 @@
             </div>
           </div>
         }
-        <label class="field"
-          ><span class="form-label">Appointment date <span class="required-indicator">*</span></span
-          ><input type="date" formControlName="date" [min]="dates.today()"
-        /></label>
+        <div class="field">
+          <span class="form-label">Appointment date <span class="required-indicator">*</span></span
+          ><app-date-picker
+            formControlName="date"
+            placeholder="Select appointment date"
+            ariaLabel="Appointment date"
+            [min]="dates.today()"
+          />
+        </div>
         <label class="field"
           ><span class="form-label">Available time <span class="required-indicator">*</span></span
           ><select formControlName="time">

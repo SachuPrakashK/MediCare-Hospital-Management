@@ -50,7 +50,19 @@ export class LaboratoryForm implements OnChanges {
     this.form.valueChanges.subscribe(() => this.dirtyChanged.emit(this.form.dirty));
   }
   ngOnChanges() {
-    this.form.reset({ priority: 'Routine', sampleType: 'Blood', abnormal: false });
+    this.form.reset({
+      patientId: '',
+      doctorId: '',
+      testDefinitionId: '',
+      priority: 'Routine',
+      clinicalNotes: '',
+      sampleType: 'Blood',
+      value: '',
+      unit: '',
+      referenceRange: '',
+      abnormal: false,
+      notes: '',
+    });
     if (this.order())
       this.form.patchValue({
         patientId: this.order().patientId,

@@ -262,6 +262,15 @@ export class InpatientStore {
     this.dashboard.invalidate('inpatient');
     return r.data;
   }
+  async updateAdmission(id: string, value: { reason: string; initialDiagnosis: string }) {
+    const response = await firstValueFrom(this.api.update(id, value));
+    this.dashboard.invalidate('inpatient');
+    return response.data;
+  }
+  async removeAdmission(id: string) {
+    await firstValueFrom(this.api.remove(id));
+    this.dashboard.invalidate('inpatient');
+  }
   async transfer(id: string, toBedId: string) {
     await firstValueFrom(this.api.transfer(id, toBedId));
     await this.load();
@@ -296,6 +305,16 @@ export class InpatientStore {
     const handovers = await firstValueFrom(this.api.handovers());
     this.handoversState.set(handovers.data);
     return response.data;
+  }
+  async updateHandover(id: string, value: any) {
+    const response = await firstValueFrom(this.api.updateHandover(id, value));
+    const handovers = await firstValueFrom(this.api.handovers());
+    this.handoversState.set(handovers.data);
+    return response.data;
+  }
+  async deleteHandover(id: string) {
+    await firstValueFrom(this.api.deleteHandover(id));
+    this.handoversState.update((items) => items.filter((item) => item.id !== id));
   }
   async acknowledgeHandover(id: string) {
     await firstValueFrom(this.api.acknowledgeHandover(id));
