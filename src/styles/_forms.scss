@@ -52,6 +52,139 @@ label.field select,
 .field select:disabled {
   background: var(--color-surface-muted);
 }
+input[type='date'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='time'] {
+  min-height: var(--input-height);
+  color-scheme: light;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='datetime-local']::-webkit-calendar-picker-indicator,
+input[type='month']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  padding: 5px;
+  border-radius: 7px;
+  cursor: pointer;
+  opacity: 0.72;
+  transition:
+    background-color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+input[type='date']::-webkit-calendar-picker-indicator:hover,
+input[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+input[type='month']::-webkit-calendar-picker-indicator:hover,
+input[type='time']::-webkit-calendar-picker-indicator:hover {
+  background-color: rgb(20 184 166 / 12%);
+  opacity: 1;
+}
+input[type='date']:disabled,
+input[type='datetime-local']:disabled,
+input[type='month']:disabled,
+input[type='time']:disabled {
+  cursor: not-allowed;
+}
+
+input.app-date-input {
+  padding-inline-end: 42px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230f4c75' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 11h18'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+input.app-date-input:hover:not(:disabled) {
+  border-color: var(--mc-secondary);
+  background-color: var(--color-surface-subtle);
+}
+
+input.app-date-input.is-calendar-open {
+  border-color: var(--mc-secondary);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(20 184 166 / 14%);
+}
+
+[dir='rtl'] input.app-date-input {
+  background-position: left 12px center;
+}
+
+.app-date-picker-overlay {
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 22px 55px rgb(15 76 117 / 24%);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(15 76 117 / 32%) transparent;
+}
+
+.app-date-picker-overlay--datetime .app-calendar {
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  box-shadow: none;
+}
+
+.app-date-picker-time {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 14px;
+  border: 1px solid rgb(111 163 216 / 34%);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: var(--color-surface);
+}
+
+.app-date-picker-time label {
+  display: grid;
+  flex: 1;
+  gap: 5px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-date-picker-time input,
+.app-date-picker-time button {
+  min-height: 38px;
+}
+
+.app-date-picker-time input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+@media (max-width: 480px) {
+  .app-date-picker-overlay {
+    right: 12px;
+    left: 12px !important;
+    width: auto !important;
+  }
+  .app-date-picker-time {
+    position: sticky;
+    bottom: 0;
+  }
+}
+[dir='rtl'] input[type='date'],
+[dir='rtl'] input[type='datetime-local'],
+[dir='rtl'] input[type='month'],
+[dir='rtl'] input[type='time'] {
+  direction: rtl;
+  text-align: start;
+}
 input::placeholder,
 textarea::placeholder {
   font-weight: 400;

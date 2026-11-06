@@ -8,6 +8,8 @@ const page = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().default(1),
     page_size: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).default(''),
+    status: z.enum(['all', 'unread', 'read']).default('all'),
   }),
 });
 const id = z.object({ params: z.object({ id: z.uuid() }) });
@@ -18,7 +20,10 @@ notificationRoutes.get(
   validate(page),
   asyncHandler(async (req, res) =>
     res.json(
-      await service.list(req.auth!.userId, Number(req.query.page), Number(req.query.page_size)),
+      await service.list(req.auth!.userId, Number(req.query.page), Number(req.query.page_size), {
+        search: String(req.query.search ?? ''),
+        status: String(req.query.status ?? 'all') as 'all' | 'unread' | 'read',
+      }),
     ),
   ),
 );
@@ -33,6 +38,14 @@ notificationRoutes.patch(
   asyncHandler(async (req, res) => {
     await service.readAll(req.auth!.userId);
     res.json({ data: null, message: 'Notifications marked as read.' });
+  }),
+);
+notificationRoutes.delete(
+  '/:id',
+  validate(id),
+  asyncHandler(async (req, res) => {
+    await service.dismiss(req.auth!.userId, String(req.params.id));
+    res.json({ data: null, message: 'Notification dismissed.' });
   }),
 );
 notificationRoutes.patch(

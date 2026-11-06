@@ -25,6 +25,7 @@ export class SettingsState implements OnDestroy {
   readonly loading = signal(true);
   readonly saving = signal<SettingsSection | null>(null);
   readonly logoUrl = signal('');
+  readonly logoLoading = signal(true);
   readonly uploadingLogo = signal(false);
   readonly logoError = signal(false);
   readonly languages = signal<AppLanguage[]>([]);
@@ -116,6 +117,7 @@ export class SettingsState implements OnDestroy {
   readonly articleEditorOpen = signal(false);
   readonly savingArticle = signal(false);
   private translationLoadVersion = 0;
+  private logoObjectUrl = '';
   readonly forms: Record<Exclude<SettingsSection, 'languages' | 'support'>, FormGroup> = {
     hospital: this.fb.nonNullable.group({
       hospitalName: ['', Validators.required],
@@ -173,21 +175,34 @@ export class SettingsState implements OnDestroy {
   }
   ngOnDestroy() {
     this.revokeLogoUrl();
-  }
-  private revokeLogoUrl() {
-    const current = this.logoUrl();
-    if (current) URL.revokeObjectURL(current);
     this.logoUrl.set('');
   }
+  private revokeLogoUrl() {
+    if (this.logoObjectUrl) URL.revokeObjectURL(this.logoObjectUrl);
+    this.logoObjectUrl = '';
+  }
+  private showNoLogo() {
+    this.revokeLogoUrl();
+    this.logoUrl.set('');
+    this.logoError.set(false);
+  }
+  logoFailed() {
+    this.revokeLogoUrl();
+    this.logoUrl.set('');
+    this.logoError.set(true);
+  }
   private async loadLogo() {
+    this.logoLoading.set(true);
     try {
       const blob = await firstValueFrom(this.api.logo());
       this.revokeLogoUrl();
-      this.logoUrl.set(URL.createObjectURL(blob));
+      this.logoObjectUrl = URL.createObjectURL(blob);
+      this.logoUrl.set(this.logoObjectUrl);
       this.logoError.set(false);
     } catch {
-      this.revokeLogoUrl();
-      this.logoError.set(true);
+      this.showNoLogo();
+    } finally {
+      this.logoLoading.set(false);
     }
   }
   async load() {
@@ -540,9 +555,11 @@ export class SettingsState implements OnDestroy {
   async deleteLogo() {
     if (
       this.uploadingLogo() ||
+      this.logoLoading() ||
+      !this.logoUrl() ||
       !(await this.confirm.confirm({
         title: 'Delete hospital logo?',
-        message: 'The default application logo will be used.',
+        message: 'The hospital logo will be removed from the application.',
         confirmLabel: 'Delete',
         danger: true,
       }))
@@ -551,8 +568,7 @@ export class SettingsState implements OnDestroy {
     this.uploadingLogo.set(true);
     try {
       await firstValueFrom(this.api.deleteLogo());
-      this.revokeLogoUrl();
-      this.logoError.set(true);
+      this.showNoLogo();
       this.toast.success('Hospital logo deleted.');
     } finally {
       this.uploadingLogo.set(false);

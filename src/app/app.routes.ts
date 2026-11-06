@@ -66,8 +66,10 @@ export const routes: Routes = [
       },
       {
         path: 'notifications',
-        loadComponent: () =>
-          import('./features/notifications/notifications-page').then((m) => m.NotificationsPage),
+        loadChildren: () =>
+          import('./features/notifications/notifications.routes').then(
+            (m) => m.NOTIFICATION_ROUTES,
+          ),
       },
       {
         path: 'patients',

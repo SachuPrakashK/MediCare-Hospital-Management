@@ -179,6 +179,7 @@
                   />
                 </th>
               }
+              <th class="actions-column">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -187,7 +188,7 @@
                 class="clickable"
                 tabindex="0"
                 (click)="viewAdmission(admission.id)"
-                (keydown.enter)="viewAdmission(admission.id)"
+                (keydown.enter)="rowKeydown($event, admission.id)"
               >
                 @if (columnVisible('admission')) {
                   <td>
@@ -224,6 +225,20 @@
                 @if (columnVisible('status')) {
                   <td><app-status-badge [value]="admission.status" /></td>
                 }
+                <td class="actions-column">
+                  <app-actions-menu
+                    [id]="'admission-' + admission.id"
+                    [label]="'Actions for admission ' + admission.number"
+                    [canView]="auth.has('admissions.view')"
+                    [canEdit]="auth.has('admissions.manage')"
+                    [canDelete]="auth.has('admissions.manage')"
+                    [editDisabled]="deletingId() === admission.id"
+                    editDisabledReason="This admission is being deleted."
+                    (view)="viewAdmission(admission.id)"
+                    (edit)="openEdit(admission)"
+                    (delete)="deleteAdmission(admission)"
+                  />
+                </td>
               </tr>
             }
           </tbody>
@@ -319,6 +334,43 @@
       </table>
     </div>
   </section>
+}
+@if (editing(); as admission) {
+  <app-modal
+    title="Edit admission"
+    [description]="'Update clinical admission details for ' + admission.number + '.'"
+    size="lg"
+    [dirty]="editForm.dirty"
+    [busy]="editSubmitting()"
+    (closed)="editing.set(null)"
+  >
+    <form class="crud-modal__form" [formGroup]="editForm" (ngSubmit)="saveAdmission()">
+      <div class="crud-modal__body">
+        <div class="form-grid">
+          <label class="field full">
+            <span class="form-label">Reason for admission</span>
+            <textarea formControlName="reason" placeholder="Enter reason for admission"></textarea>
+          </label>
+          <label class="field full">
+            <span class="form-label">Initial diagnosis</span>
+            <textarea
+              formControlName="initialDiagnosis"
+              placeholder="Enter initial diagnosis"
+            ></textarea>
+          </label>
+        </div>
+        @if (editError()) {
+          <p class="error" role="alert">{{ editError() }}</p>
+        }
+      </div>
+      <div class="crud-modal__footer">
+        <button type="button" class="secondary" (click)="editing.set(null)">Cancel</button>
+        <button type="submit" class="primary" [disabled]="editForm.invalid || editSubmitting()">
+          {{ editSubmitting() ? 'Saving…' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
 }
 @if (wardOpen()) {
   <app-modal

@@ -3,8 +3,6 @@ import { FormsModule } from '@angular/forms';
 import { Phase23Store } from '../../../core/services/phase23.store';
 import { PharmacyStore } from '../../../core/services/pharmacy.store';
 import { PatientStore } from '../../patients/patient.store';
-import { NotificationStore } from '../../../core/notifications/notification.store';
-import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { AppModal } from '../../../shared/components/modal/app-modal';
 import { OperationsForm, OperationsFormKind } from './operations-form';
 import { StatusBadge } from '../../../shared/components/status-badge/status-badge';
@@ -40,8 +38,6 @@ export class OperationsPage {
   readonly store = inject(Phase23Store);
   readonly pharmacy = inject(PharmacyStore);
   readonly patients = inject(PatientStore);
-  readonly notifications = inject(NotificationStore);
-  private dates = inject(AppDateTimeService);
   private api = inject(Phase23ApiService);
   private preferences = inject(TablePreferencesService);
   readonly auth = inject(AuthStore);
@@ -49,10 +45,9 @@ export class OperationsPage {
   private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  readonly tab = signal<'inventory' | 'procurement' | 'suppliers' | 'ambulance' | 'notifications'>(
-    'inventory',
-  );
+  readonly tab = signal<'inventory' | 'procurement' | 'suppliers' | 'ambulance'>('inventory');
   readonly message = signal('');
+  readonly deletingId = signal<string | null>(null);
   readonly formKind = signal<OperationsFormKind | null>(null);
   readonly editing = signal<any | null>(null);
   readonly formDirty = signal(false);
@@ -203,14 +198,8 @@ export class OperationsPage {
   );
   constructor() {
     const requestedTab = this.route.snapshot.queryParamMap.get('tab');
-    if (
-      ['inventory', 'procurement', 'suppliers', 'ambulance', 'notifications'].includes(
-        requestedTab ?? '',
-      )
-    ) {
-      this.tab.set(
-        requestedTab as 'inventory' | 'procurement' | 'suppliers' | 'ambulance' | 'notifications',
-      );
+    if (['inventory', 'procurement', 'suppliers', 'ambulance'].includes(requestedTab ?? '')) {
+      this.tab.set(requestedTab as 'inventory' | 'procurement' | 'suppliers' | 'ambulance');
     }
     this.search.set(this.route.snapshot.queryParamMap.get('search') ?? '');
     this.page.set(Math.max(1, Number(this.route.snapshot.queryParamMap.get('page')) || 1));
@@ -221,7 +210,6 @@ export class OperationsPage {
       this.sort.set({ field: sortField, direction: sortDirection });
     this.visibleColumns.set(this.preferences.load(this.tableId(), this.columns()));
     void this.patients.load();
-    void this.notifications.load();
     void this.loadTable();
     void this.preferences
       .loadRemote(this.tableId(), this.columns())
@@ -239,11 +227,8 @@ export class OperationsPage {
   columnVisible(id: string) {
     return this.visibleColumns().includes(id);
   }
-  async selectTab(
-    value: 'inventory' | 'procurement' | 'suppliers' | 'ambulance' | 'notifications',
-  ) {
+  async selectTab(value: 'inventory' | 'procurement' | 'suppliers' | 'ambulance') {
     this.tab.set(value);
-    if (!this.tableTab()) return;
     this.page.set(1);
     this.search.set('');
     this.sort.set(null);
@@ -364,28 +349,32 @@ export class OperationsPage {
     });
   }
   async remove(kind: 'inventory' | 'supplier' | 'ambulance' | 'purchase', item: any) {
+    if (this.deletingId()) return;
     const label = kind === 'purchase' ? item.number : (item.name ?? item.number);
     const cancelling = kind === 'purchase';
     if (
       !(await this.confirm.confirm({
-        title: `${cancelling ? 'Cancel' : 'Deactivate'} ${label}?`,
+        title: `${cancelling ? 'Cancel' : 'Delete'} ${label}?`,
         message: cancelling
           ? 'The request will remain in history with Cancelled status.'
-          : 'The record will be deactivated and retained for audit history.',
-        confirmLabel: cancelling ? 'Cancel request' : 'Deactivate',
+          : 'The record will be removed from active operations and retained for audit history and existing relationships.',
+        confirmLabel: cancelling ? 'Cancel request' : 'Delete',
         danger: true,
       }))
     )
       return;
+    this.deletingId.set(item.id);
     try {
       if (kind === 'inventory') await this.store.removeInventory(item.id);
       else if (kind === 'supplier') await this.store.removeSupplier(item.id);
       else if (kind === 'ambulance') await this.store.removeAmbulance(item.id);
       else await firstValueFrom(this.api.cancelPurchaseOrder(item.id));
-      this.toast.success(cancelling ? 'Purchase request cancelled.' : 'Record deactivated.');
+      this.toast.success(cancelling ? 'Purchase request cancelled.' : 'Record deleted.');
       await this.loadTable();
     } catch {
       this.toast.error('The operation could not be completed.');
+    } finally {
+      this.deletingId.set(null);
     }
   }
   title() {
@@ -432,8 +421,5 @@ export class OperationsPage {
     } catch (e) {
       this.message.set((e as Error).message);
     }
-  }
-  format(v: string) {
-    return this.dates.formatDateTime(v);
   }
 }

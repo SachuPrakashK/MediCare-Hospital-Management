@@ -19,9 +19,11 @@ import { ColumnConfig } from '../../../shared/components/column-config/column-co
 import { TableColumnDefinition, TableSort } from '../../../shared/models/table.models';
 import { TablePreferencesService } from '../../../core/services/table-preferences.service';
 import { SummaryCard } from '../../../shared/components/summary-card/summary-card';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 
 @Component({
   imports: [
+    AppDatePickerDirective,
     ReactiveFormsModule,
     SearchField,
     StatusBadge,

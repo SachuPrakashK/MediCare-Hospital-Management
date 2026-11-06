@@ -22,7 +22,13 @@ export const admissionRadiology = asyncHandler(async (q, r) =>
 export const create = asyncHandler(async (q, r) =>
   r.status(201).json({ data: await s.admit(q.body, q.auth!.userId) }),
 );
-export const update = asyncHandler(async (q, r) => r.json({ data: await s.update(id(q), q.body) }));
+export const update = asyncHandler(async (q, r) =>
+  r.json({ data: await s.update(id(q), q.body, q.auth!.userId) }),
+);
+export const remove = asyncHandler(async (q, r) => {
+  await s.remove(id(q), q.auth!.userId);
+  r.json({ data: null, message: 'Admission deleted.' });
+});
 export const transfer = asyncHandler(async (q, r) =>
   r.json({ data: await s.transfer(id(q), q.body, q.auth!.userId) }),
 );
@@ -93,6 +99,12 @@ export const handovers = asyncHandler(async (q, r) =>
 );
 export const createHandover = asyncHandler(async (q, r) =>
   r.status(201).json({ data: await s.createHandover(q.body, q.auth!.userId, q.auth!.roles) }),
+);
+export const updateHandover = asyncHandler(async (q, r) =>
+  r.json({ data: await s.updateHandover(id(q), q.body, q.auth!.userId, q.auth!.roles) }),
+);
+export const deleteHandover = asyncHandler(async (q, r) =>
+  r.status(204).send(await s.deleteHandover(id(q), q.auth!.userId, q.auth!.roles)),
 );
 export const acknowledgeHandover = asyncHandler(async (q, r) =>
   r.json({ data: await s.acknowledgeHandover(id(q), q.auth!.userId, q.auth!.roles) }),

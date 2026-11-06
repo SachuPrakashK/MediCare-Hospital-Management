@@ -11,8 +11,10 @@ import { AppointmentStatusChart } from '../dashboard/components/appointment-stat
 import { AppointmentsDepartmentChart } from '../dashboard/components/appointments-department-chart/appointments-department-chart';
 import { CHART_COLORS } from '../dashboard/components/chart-colors';
 import { ReportsApiService, ReportsData } from './reports-api.service';
+import { AppDatePickerDirective } from '../../shared/components/date-picker/app-date-picker.directive';
 @Component({
   imports: [
+    AppDatePickerDirective,
     SharedFilter,
     SharedExport,
     SummaryCard,

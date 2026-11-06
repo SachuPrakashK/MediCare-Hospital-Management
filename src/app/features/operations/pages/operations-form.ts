@@ -86,10 +86,27 @@ export class OperationsForm implements OnChanges {
     else required('supplierId', 'itemType', 'itemId', 'quantity', 'unitPrice');
     const e = this.entity();
     this.form.reset({
+      name: '',
+      code: '',
+      categoryId: '',
+      supplierId: '',
+      unit: '',
+      store: '',
       quantity: 0,
       reorderLevel: 0,
+      contactPerson: '',
+      phone: '',
+      email: '',
+      address: '',
+      taxNumber: '',
+      number: '',
+      registration: '',
+      vehicleType: '',
+      driver: '',
+      driverContact: '',
       status: 'Available',
       itemType: 'Inventory',
+      itemId: '',
       unitPrice: 0,
     });
     if (e)

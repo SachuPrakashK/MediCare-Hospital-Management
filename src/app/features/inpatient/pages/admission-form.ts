@@ -6,7 +6,11 @@ import { ClinicalStore } from '../../../core/services/clinical.store';
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { AppModal } from '../../../shared/components/modal/app-modal';
 import { ToastService } from '../../../core/services/toast.service';
-@Component({ imports: [ReactiveFormsModule, AppModal], templateUrl: './admission-form.html' })
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
+@Component({
+  imports: [ReactiveFormsModule, AppModal, AppDatePickerDirective],
+  templateUrl: './admission-form.html',
+})
 export class AdmissionForm {
   readonly store = inject(InpatientStore);
   readonly clinical = inject(ClinicalStore);

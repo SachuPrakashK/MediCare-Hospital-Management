@@ -6,6 +6,7 @@ import { NotificationStore } from '../../../core/notifications/notification.stor
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { SearchField } from '../../../shared/components/search/search-field';
+import { AppDatePicker } from '../../../shared/components/date-picker/app-date-picker';
 import {
   ApiAppointment,
   AppointmentApiService,
@@ -16,7 +17,7 @@ import { AppointmentInvalidationService } from '../appointment-invalidation.serv
 
 @Component({
   selector: 'app-appointment-form',
-  imports: [ReactiveFormsModule, SearchField],
+  imports: [ReactiveFormsModule, SearchField, AppDatePicker],
   templateUrl: './appointment-form.html',
   styleUrl: './appointment-form.scss',
 })

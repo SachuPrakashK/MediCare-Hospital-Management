@@ -343,6 +343,63 @@ export const inpatientService = {
       return handover;
     }, txOptions);
   },
+  async updateHandover(id: string, input: any, actorId: string, roles: string[]) {
+    const existing = await prisma.shiftHandover.findUnique({ where: { id } });
+    if (!existing) throw new AppError(404, 'Shift handover was not found.', 'NOT_FOUND');
+    if (existing.status !== 'PENDING') throw conflict('Acknowledged handovers cannot be edited.');
+    if (!isAdministrator(roles) && existing.handedOverById !== actorId)
+      throw new AppError(403, 'Only the handover author can edit this record.', 'FORBIDDEN');
+    await assertNursingAccess(input.admissionId, actorId, roles);
+    if (input.handedOverToId) {
+      const recipient = await prisma.user.findFirst({
+        where: {
+          id: input.handedOverToId,
+          status: 'ACTIVE',
+          roles: { some: { role: { code: 'NURSE' } } },
+        },
+        select: { id: true },
+      });
+      if (!recipient)
+        throw new AppError(422, 'The receiving nurse is invalid.', 'VALIDATION_ERROR');
+    }
+    return prisma.$transaction(async (tx) => {
+      const handover = await tx.shiftHandover.update({
+        where: { id },
+        data: input,
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: actorId,
+          action: 'UPDATE',
+          module: 'nursing',
+          entityType: 'ShiftHandover',
+          entityId: id,
+          metadata: { admissionId: input.admissionId, toShift: input.toShift },
+        },
+      });
+      return handover;
+    }, txOptions);
+  },
+  async deleteHandover(id: string, actorId: string, roles: string[]) {
+    const existing = await prisma.shiftHandover.findUnique({ where: { id } });
+    if (!existing) throw new AppError(404, 'Shift handover was not found.', 'NOT_FOUND');
+    if (existing.status !== 'PENDING') throw conflict('Acknowledged handovers cannot be deleted.');
+    if (!isAdministrator(roles) && existing.handedOverById !== actorId)
+      throw new AppError(403, 'Only the handover author can delete this record.', 'FORBIDDEN');
+    return prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          userId: actorId,
+          action: 'DELETE',
+          module: 'nursing',
+          entityType: 'ShiftHandover',
+          entityId: id,
+          metadata: { admissionId: existing.admissionId, status: existing.status },
+        },
+      });
+      await tx.shiftHandover.delete({ where: { id } });
+    }, txOptions);
+  },
   async acknowledgeHandover(id: string, actorId: string, roles: string[]) {
     return prisma.$transaction(async (tx) => {
       const handover = await tx.shiftHandover.findUnique({ where: { id } });
@@ -681,9 +738,51 @@ export const inpatientService = {
     });
     return result;
   },
-  async update(id: string, input: any) {
+  async update(id: string, input: any, actorId: string) {
     await this.details(id);
-    return prisma.admission.update({ where: { id }, data: input });
+    return prisma.$transaction(async (tx) => {
+      const item = await tx.admission.update({ where: { id }, data: input });
+      await tx.auditLog.create({
+        data: {
+          userId: actorId,
+          action: 'UPDATE',
+          module: 'inpatient',
+          entityType: 'Admission',
+          entityId: id,
+        },
+      });
+      return item;
+    });
+  },
+  async remove(id: string, actorId: string) {
+    await this.details(id);
+    await prisma.$transaction(async (tx) => {
+      const at = new Date();
+      const allocation = await tx.bedAllocation.findFirst({
+        where: { admissionId: id, endedAt: null },
+      });
+      if (allocation) {
+        await tx.bedAllocation.update({ where: { id: allocation.id }, data: { endedAt: at } });
+        await tx.bed.update({
+          where: { id: allocation.bedId },
+          data: { status: 'AVAILABLE', version: { increment: 1 } },
+        });
+      }
+      await tx.admission.update({
+        where: { id },
+        data: { deletedAt: at, status: 'CANCELLED' },
+      });
+      await tx.auditLog.create({
+        data: {
+          userId: actorId,
+          action: 'DELETE',
+          module: 'inpatient',
+          entityType: 'Admission',
+          entityId: id,
+          metadata: { retainedForAudit: true },
+        },
+      });
+    }, txOptions);
   },
   async transfer(id: string, input: any, actorId: string) {
     const result = await prisma.$transaction(async (tx) => {

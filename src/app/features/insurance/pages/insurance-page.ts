@@ -23,11 +23,13 @@ import { TableSortHeader } from '../../../shared/components/table-sort-header/ta
 import { TableColumnDefinition, TableSort } from '../../../shared/models/table.models';
 import { InsuranceForm, InsuranceFormKind } from './insurance-form';
 import { PatientStore } from '../../patients/patient.store';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 
 type InsuranceTab = 'claims' | 'coverage' | 'providers';
 
 @Component({
   imports: [
+    AppDatePickerDirective,
     FormsModule,
     DatePipe,
     AppModal,
@@ -71,6 +73,7 @@ export class InsurancePage {
   readonly totalPages = signal(0);
   readonly sort = signal<TableSort | null>(null);
   readonly exporting = signal(false);
+  readonly deletingId = signal<string | null>(null);
   readonly filters = signal<Record<string, string>>({});
   readonly draftFilters = signal<Record<string, string>>({});
 
@@ -370,19 +373,28 @@ export class InsurancePage {
     }
   }
   async remove(kind: 'policy' | 'provider', item: any) {
+    if (this.deletingId()) return;
     if (
       !(await this.confirmation.confirm({
-        title: `Deactivate ${kind}?`,
-        message: 'The record will remain in history but will no longer be active.',
-        confirmLabel: 'Deactivate',
+        title: `Delete ${kind}?`,
+        message:
+          'The record will be removed from active use but retained in history for insurance and audit integrity.',
+        confirmLabel: 'Delete',
         danger: true,
       }))
     )
       return;
-    if (kind === 'policy') await this.store.removePolicy(item.id);
-    else await this.store.removeProvider(item.id);
-    this.toast.success(`${kind} deactivated.`);
-    await Promise.all([this.loadTable(), this.loadSummary()]);
+    this.deletingId.set(item.id);
+    try {
+      if (kind === 'policy') await this.store.removePolicy(item.id);
+      else await this.store.removeProvider(item.id);
+      this.toast.success(`${kind} deleted.`);
+      await Promise.all([this.loadTable(), this.loadSummary()]);
+    } catch (error: any) {
+      this.toast.error(error?.error?.message ?? `${kind} could not be deleted.`);
+    } finally {
+      this.deletingId.set(null);
+    }
   }
   details(item: any) {
     const kind =

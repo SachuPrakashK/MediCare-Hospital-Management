@@ -4,10 +4,11 @@ import { Phase23Store } from '../../../core/services/phase23.store';
 import { PatientStore } from '../../patients/patient.store';
 import { AppDateTimeService } from '../../../core/services/app-date-time.service';
 import { AppIcon } from '../../../shared/components/icon/app-icon';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 export type InsuranceFormKind = 'provider' | 'policy' | 'claim';
 @Component({
   selector: 'app-insurance-form',
-  imports: [ReactiveFormsModule, AppIcon],
+  imports: [ReactiveFormsModule, AppIcon, AppDatePickerDirective],
   templateUrl: './insurance-form.html',
   styleUrl: './insurance-form.scss',
 })

@@ -89,6 +89,7 @@ describe('SettingsState translations', () => {
     };
 
     await state.openTranslations(french);
+    expect(state.logoUrl()).toBe('');
     expect(state.translationValues()['common.save']).toBe('Enregistrer');
     expect(state.translationMode()).toBe('all');
 

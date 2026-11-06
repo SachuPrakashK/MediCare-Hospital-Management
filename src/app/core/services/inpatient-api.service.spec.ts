@@ -58,6 +58,14 @@ describe('InpatientApiService', () => {
     const handover = http.expectOne('/api/v1/nursing/handovers');
     expect(handover.request.method).toBe('POST');
     handover.flush({ data: { id: 'handover-id' } });
+    api.updateHandover('handover-id', { clinicalSummary: 'Updated' }).subscribe();
+    const update = http.expectOne('/api/v1/nursing/handovers/handover-id');
+    expect(update.request.method).toBe('PUT');
+    update.flush({ data: { id: 'handover-id' } });
+    api.deleteHandover('handover-id').subscribe();
+    const removal = http.expectOne('/api/v1/nursing/handovers/handover-id');
+    expect(removal.request.method).toBe('DELETE');
+    removal.flush(null);
     api.acknowledgeHandover('handover-id').subscribe();
     const acknowledgement = http.expectOne('/api/v1/nursing/handovers/handover-id/acknowledge');
     expect(acknowledgement.request.method).toBe('POST');

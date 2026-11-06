@@ -11,9 +11,8 @@
   ><button [class.active]="tab() === 'procurement'" (click)="selectTab('procurement')">
     Procurement</button
   ><button [class.active]="tab() === 'suppliers'" (click)="selectTab('suppliers')">Suppliers</button
-  ><button [class.active]="tab() === 'ambulance'" (click)="selectTab('ambulance')">Ambulance</button
-  ><button [class.active]="tab() === 'notifications'" (click)="selectTab('notifications')">
-    Notifications ({{ notifications.unreadCount() }})
+  ><button [class.active]="tab() === 'ambulance'" (click)="selectTab('ambulance')">
+    Ambulance
   </button>
 </div>
 @if (tableTab()) {
@@ -319,7 +318,7 @@
                         [canView]="true"
                         [canEdit]="auth.has('inventory.edit')"
                         [canDelete]="auth.has('inventory.delete')"
-                        deleteLabel="Deactivate"
+                        deleteLabel="Delete"
                         (view)="view(item)"
                         (edit)="open('inventory', item)"
                         (delete)="remove('inventory', item)"
@@ -414,7 +413,7 @@
                         [canView]="true"
                         [canEdit]="auth.has('inventory.edit')"
                         [canDelete]="auth.has('inventory.delete')"
-                        deleteLabel="Deactivate"
+                        deleteLabel="Delete"
                         (view)="view(item)"
                         (edit)="open('supplier', item)"
                         (delete)="remove('supplier', item)"
@@ -457,7 +456,7 @@
                         [canView]="true"
                         [canEdit]="auth.has('ambulance.edit')"
                         [canDelete]="auth.has('ambulance.delete')"
-                        deleteLabel="Deactivate"
+                        deleteLabel="Delete"
                         (view)="view(item)"
                         (edit)="open('ambulance', item)"
                         (delete)="remove('ambulance', item)"
@@ -518,23 +517,6 @@
       /></label>
     </div>
     <div class="form-actions"><button class="primary" (click)="book()">Book ambulance</button></div>
-  </section>
-}
-@if (tab() === 'notifications') {
-  <section class="card">
-    <div class="section-title"><h2>Notification center</h2></div>
-    @for (n of notifications.notifications(); track n.id) {
-      <article class="notification" [class.unread]="!n.isRead" (click)="notifications.markRead(n)">
-        <span class="notice-icon">!</span>
-        <div>
-          <b>{{ n.title }}</b>
-          <p>{{ n.message }}</p>
-          <small>{{ format(n.createdAt) }}</small>
-        </div>
-      </article>
-    } @empty {
-      <div class="empty">No notifications.</div>
-    }
   </section>
 }
 @if (message()) {

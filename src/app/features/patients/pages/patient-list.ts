@@ -28,8 +28,10 @@ import { TableSort } from '../../../shared/models/table.models';
 import { TableColumnDefinition } from '../../../shared/models/table.models';
 import { ColumnConfig } from '../../../shared/components/column-config/column-config';
 import { TablePreferencesService } from '../../../core/services/table-preferences.service';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 @Component({
   imports: [
+    AppDatePickerDirective,
     ReactiveFormsModule,
     AppIcon,
     EmptyState,

@@ -38,7 +38,7 @@ administrationRoutes.get(
   requirePermissions('settings.view'),
   asyncHandler(async (_q, r) => {
     const image = await hospitalLogoService.read();
-    r.type(image.type).set('Cache-Control', 'private, max-age=300').send(image.buffer);
+    r.type(image.type).set('Cache-Control', 'private, no-store').send(image.buffer);
   }),
 );
 administrationRoutes.post(

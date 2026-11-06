@@ -19,6 +19,7 @@ import { AppDateTimeService } from '../../../core/services/app-date-time.service
 import { ToastService } from '../../../core/services/toast.service';
 import { Patient } from '../../../shared/models/clinical.models';
 import { PatientStore } from '../patient.store';
+import { AppDatePickerDirective } from '../../../shared/components/date-picker/app-date-picker.directive';
 
 export type PatientFormMode = 'create' | 'edit';
 const humanName = /^[\p{L}\p{M}][\p{L}\p{M}' .-]*$/u;
@@ -32,7 +33,7 @@ const normalizePhone = (value: string) => {
 
 @Component({
   selector: 'app-patient-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AppDatePickerDirective],
   templateUrl: './patient-form.html',
   styleUrl: './patient-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,8 +1,29 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/app-error.js';
 export const notificationService = {
-  async list(userId: string, page: number, pageSize: number) {
-    const where = { userId };
+  async list(
+    userId: string,
+    page: number,
+    pageSize: number,
+    filters: { search: string; status: 'all' | 'unread' | 'read' } = {
+      search: '',
+      status: 'all',
+    },
+  ) {
+    const where: Prisma.NotificationWhereInput = {
+      userId,
+      ...(filters.status === 'all' ? {} : { isRead: filters.status === 'read' }),
+      ...(filters.search
+        ? {
+            OR: [
+              { title: { contains: filters.search, mode: 'insensitive' } },
+              { message: { contains: filters.search, mode: 'insensitive' } },
+              { type: { contains: filters.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
     const [data, total] = await Promise.all([
       prisma.notification.findMany({
         where,
@@ -31,6 +52,10 @@ export const notificationService = {
       where: { userId, isRead: false },
       data: { isRead: true, readAt: new Date() },
     });
+  },
+  async dismiss(userId: string, id: string) {
+    const result = await prisma.notification.deleteMany({ where: { id, userId } });
+    if (!result.count) throw new AppError(404, 'Notification was not found.', 'NOT_FOUND');
   },
   async notifyRoles(
     roleCodes: string[],

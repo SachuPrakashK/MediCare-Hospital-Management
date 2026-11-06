@@ -36,6 +36,8 @@ export class AppActionsMenu implements OnDestroy {
   readonly id = input.required<string>();
   readonly label = input('Record actions');
   readonly canDelete = input(true);
+  readonly deleteDisabled = input(false);
+  readonly deleteDisabledReason = input('This record cannot be deleted.');
   readonly canView = input(true);
   readonly canEdit = input(true);
   readonly editDisabled = input(false);
@@ -46,6 +48,7 @@ export class AppActionsMenu implements OnDestroy {
   readonly canReset = input(false);
   readonly canPrint = input(false);
   readonly canDownload = input(false);
+  readonly downloadLabel = input('Download Invoice');
   readonly canReschedule = input(false);
   readonly rescheduleDisabled = input(false);
   readonly rescheduleDisabledReason = input('This appointment cannot be rescheduled.');
@@ -129,6 +132,7 @@ export class AppActionsMenu implements OnDestroy {
     event.stopPropagation();
     if (
       (action === 'edit' && this.editDisabled()) ||
+      (action === 'delete' && this.deleteDisabled()) ||
       (action === 'reschedule' && this.rescheduleDisabled())
     )
       return;

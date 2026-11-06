@@ -105,6 +105,15 @@ describe('HelpSupportPage', () => {
     expect(text).toContain('SUP-2026-TEST');
   });
 
+  it('renders article categories inside the Help Center-specific inset tab bar', () => {
+    const tabs = fixture.nativeElement.querySelector('.help-category-tabs');
+    expect(tabs).toBeTruthy();
+    expect(tabs.getAttribute('role')).toBe('tablist');
+    expect(
+      Array.from(tabs.querySelectorAll('button')).map((button: any) => button.textContent.trim()),
+    ).toEqual(['All', 'Getting Started']);
+  });
+
   it('searches and filters articles using the API without inventing content', async () => {
     component.queryArticles('approved');
     component.selectCategory('Getting Started');

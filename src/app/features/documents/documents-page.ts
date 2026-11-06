@@ -55,6 +55,7 @@ export class DocumentsPage {
   readonly uploadOpen = signal(false);
   readonly selected = signal<File | null>(null);
   readonly uploading = signal(false);
+  readonly downloadingId = signal<string | null>(null);
   readonly uploadProgress = signal<number | null>(null);
   readonly documentAllowedTypes = DOCUMENT_ALLOWED_TYPES;
   readonly documentMaxSize = DOCUMENT_MAX_SIZE;
@@ -230,6 +231,19 @@ export class DocumentsPage {
       await this.store.remove(id);
       this.toast.success('Document deleted.');
       await this.load();
+    }
+  }
+  async download(id: string, preview = false) {
+    if (this.downloadingId()) return;
+    this.downloadingId.set(id);
+    try {
+      await this.store.download(id, preview);
+    } catch {
+      this.toast.error(
+        preview ? 'Document preview could not be opened.' : 'Document download failed.',
+      );
+    } finally {
+      this.downloadingId.set(null);
     }
   }
   size(v: number) {

@@ -33,32 +33,109 @@
   overflow: hidden;
 }
 .logo-setting {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 20px;
   margin: 22px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--mc-surface-soft);
+}
+.current-logo {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.logo-preview-label {
+  color: var(--mc-primary);
+  font-size: 13px;
+  font-weight: 700;
 }
 .logo-preview {
   display: grid;
-  width: 180px;
-  height: 72px;
+  width: 100%;
+  height: 104px;
   place-items: center;
   overflow: hidden;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-muted);
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--mc-surface);
   color: var(--color-muted);
+}
+.logo-preview--empty {
+  border-style: dashed;
+  background: var(--color-surface-muted);
 }
 .logo-preview img {
   display: block;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
 }
+.logo-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--color-muted);
+  text-align: center;
+}
+.logo-placeholder strong {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.logo-management {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+.logo-management__copy h3,
+.logo-management__copy p {
+  margin: 0;
+}
+.logo-management__copy h3 {
+  color: var(--mc-primary);
+  font-size: 16px;
+}
+.logo-management__copy p,
+.logo-help {
+  color: var(--color-muted);
+}
+.logo-management__copy p {
+  margin-top: 5px;
+  line-height: 1.5;
+}
+.logo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.logo-actions .button-link,
+.logo-actions button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.logo-help {
+  font-size: 12px;
+}
 .logo-setting label.button-link {
   position: relative;
   cursor: pointer;
+}
+.logo-setting label.button-link:focus-within {
+  outline: 2px solid var(--mc-secondary);
+  outline-offset: 2px;
 }
 .logo-setting input[type='file'] {
   position: absolute;
@@ -405,6 +482,18 @@
   .settings-nav {
     display: flex;
     overflow-x: auto;
+  }
+  .logo-setting {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 16px;
+    padding: 16px;
+  }
+  .logo-preview {
+    height: 112px;
+  }
+  .logo-actions > * {
+    flex: 1 1 160px;
   }
   .language-summary,
   .support-overview {

@@ -14,6 +14,7 @@ export const inpatientRepository = {
       status: { status: direction },
     };
     const where: any = {
+      deletedAt: null,
       ...(query.department_id ? { departmentId: query.department_id } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(search
@@ -101,8 +102,8 @@ export const inpatientRepository = {
     };
   },
   admission: (id: string) =>
-    prisma.admission.findUnique({
-      where: { id },
+    prisma.admission.findFirst({
+      where: { id, deletedAt: null },
       include: {
         patient: true,
         department: true,
