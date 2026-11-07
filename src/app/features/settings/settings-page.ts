@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ViewEncapsulation,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CanDeactivateFn } from '@angular/router';
 import { ApplicationSettingsTab } from './tabs/application-settings-tab';
 import { HospitalSettingsTab } from './tabs/hospital-settings-tab';
@@ -25,8 +19,6 @@ import { SettingsSection, SettingsState } from './settings-state';
   ],
   providers: [SettingsState],
   templateUrl: './settings-page.html',
-  styleUrl: './settings-page.scss',
-  encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPage {
