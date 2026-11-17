@@ -34,21 +34,6 @@ async function main() {
     );
   }
 
-  const permissions = await prisma.permission.findMany({
-    where: { code: { in: [...guestPermissions] } },
-    select: { id: true, code: true },
-  });
-  const permissionIds = new Map(permissions.map(({ id, code }) => [code, id]));
-  const missing = guestPermissions.filter((code) => !permissionIds.has(code));
-  if (missing.length) {
-    throw new Error(`Guest role permissions are missing from the database: ${missing.join(', ')}`);
-  }
-
-  const guestRole = await prisma.role.findUnique({ where: { code: 'GUEST' } });
-  if (!guestRole) {
-    throw new Error('The GUEST role is missing. Apply the application seed to a demo database first.');
-  }
-
   const email = 'guest@medicare.demo';
   const username = 'demo-guest';
   const byEmail = await prisma.user.findUnique({ where: { email } });
@@ -59,17 +44,36 @@ async function main() {
     );
   }
 
+  const permissions = await Promise.all(
+    guestPermissions.map((code) => {
+      const [module, action] = code.split('.');
+      return prisma.permission.upsert({
+        where: { code },
+        update: { module: module!, action: action! },
+        create: { code, module: module!, action: action! },
+      });
+    }),
+  );
+  const permissionIds = new Map(permissions.map(({ id, code }) => [code, id]));
+  const guestRole = await prisma.role.upsert({
+    where: { code: 'GUEST' },
+    update: {
+      name: 'Guest',
+      description: 'Read-only access to approved demonstration modules',
+      status: 'ACTIVE',
+      isSystem: true,
+    },
+    create: {
+      code: 'GUEST',
+      name: 'Guest',
+      description: 'Read-only access to approved demonstration modules',
+      status: 'ACTIVE',
+      isSystem: true,
+    },
+  });
+
   const passwordHash = await argon2.hash(randomBytes(48).toString('base64url'));
   await prisma.$transaction(async (tx) => {
-    await tx.role.update({
-      where: { id: guestRole.id },
-      data: {
-        name: 'Guest',
-        description: 'Read-only access to approved demonstration modules',
-        status: 'ACTIVE',
-        isSystem: true,
-      },
-    });
     await tx.rolePermission.deleteMany({ where: { roleId: guestRole.id } });
     await tx.rolePermission.createMany({
       data: guestPermissions.map((code) => ({
