@@ -69,6 +69,22 @@ export const openApiDocument = {
         },
       },
     },
+    '/auth/guest/register': {
+      post: {
+        summary: 'Create a read-only guest account',
+        responses: {
+          201: { description: 'Guest account created and authenticated' },
+          409: { description: 'Email is already registered' },
+          422: responses.Validation,
+        },
+      },
+    },
+    '/auth/guest/login': {
+      post: {
+        summary: 'Authenticate a guest-only account',
+        responses: { 200: { description: 'Guest authenticated' }, 401: responses.Unauthorized },
+      },
+    },
     '/auth/refresh': {
       post: {
         summary: 'Rotate a refresh token',
@@ -98,6 +114,18 @@ export const openApiDocument = {
     '/auth/reset-password': {
       post: {
         summary: 'Consume a one-time reset token',
+        responses: { 200: { description: 'Password reset' }, 422: responses.Validation },
+      },
+    },
+    '/auth/guest/forgot-password': {
+      post: {
+        summary: 'Request a guest account password reset',
+        responses: { 200: { description: 'Uniform accepted response' }, 422: responses.Validation },
+      },
+    },
+    '/auth/guest/reset-password': {
+      post: {
+        summary: 'Reset a guest account password with a one-time token',
         responses: { 200: { description: 'Password reset' }, 422: responses.Validation },
       },
     },

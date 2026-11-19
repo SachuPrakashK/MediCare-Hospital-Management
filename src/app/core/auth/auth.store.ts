@@ -93,17 +93,7 @@ export class AuthStore {
           { headers: { 'X-Handle-Error-Locally': 'true' } },
         ),
       );
-      this.setSession({
-        user: mapUser(response.data.user),
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
-        remember: request.remember,
-      });
-      this.toast.resetSessionExpiry();
-      await this.applicationSettings.load();
-      await this.language.load();
-      this.sessionExpiryFlight = undefined;
+      await this.establishSession(response, request.remember);
       return true;
     } catch (error: unknown) {
       const status =
@@ -123,32 +113,76 @@ export class AuthStore {
     }
   }
 
-  async loginAsGuest() {
+  async loginGuest(request: Pick<LoginRequest, 'email' | 'password'>) {
     if (this.loading()) return false;
     this.loading.set(true);
     this.error.set(null);
     try {
       const response = await firstValueFrom(
         this.http.post<LoginResponse>(
-          '/api/v1/auth/demo-login',
-          {},
+          '/api/v1/auth/guest/login',
+          { email: request.email, password: request.password },
           { headers: { 'X-Handle-Error-Locally': 'true' } },
         ),
       );
-      this.setSession({
-        user: mapUser(response.data.user),
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresAt: Date.now() + response.data.expires_in * 1000,
-        remember: false,
-      });
-      this.toast.resetSessionExpiry();
-      await this.applicationSettings.load();
-      await this.language.load();
-      this.sessionExpiryFlight = undefined;
+      if (response.data.user.roles.length !== 1 || response.data.user.roles[0]?.code !== 'GUEST')
+        throw new Error('The account does not have guest-only access.');
+      await this.establishSession(response, false);
       return true;
-    } catch {
-      this.error.set('Guest access is temporarily unavailable. Please try again shortly.');
+    } catch (error: unknown) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? Number((error as { status?: number }).status)
+          : 0;
+      this.error.set(
+        status === 401
+          ? 'Email or password is incorrect.'
+          : status === 0
+            ? 'The guest sign-in service is unreachable. Please try again.'
+            : 'Guest sign in is temporarily unavailable. Please try again shortly.',
+      );
+      return false;
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async registerGuest(request: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    password: string;
+    confirmation: string;
+  }) {
+    if (this.loading()) return false;
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.http.post<LoginResponse>('/api/v1/auth/guest/register', request, {
+          headers: { 'X-Handle-Error-Locally': 'true' },
+        }),
+      );
+      if (response.data.user.roles.length !== 1 || response.data.user.roles[0]?.code !== 'GUEST')
+        throw new Error('The account does not have guest-only access.');
+      await this.establishSession(response, false);
+      return true;
+    } catch (error: unknown) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? Number((error as { status?: number }).status)
+          : 0;
+      this.error.set(
+        status === 403
+          ? 'Guest registration is currently closed for this environment.'
+          : status === 409
+            ? 'An account with this email already exists. Try signing in or reset your password.'
+            : status === 0
+              ? 'The guest registration service is unreachable. Please try again.'
+              : status === 422
+                ? 'Check your details and make sure your password meets the security requirements.'
+                : 'Guest registration is temporarily unavailable. Please try again shortly.',
+      );
       return false;
     } finally {
       this.loading.set(false);
@@ -238,6 +272,20 @@ export class AuthStore {
       session.remember ? localSessionKey : tabSessionKey,
       JSON.stringify(session),
     );
+  }
+
+  private async establishSession(response: LoginResponse, remember: boolean) {
+    this.setSession({
+      user: mapUser(response.data.user),
+      accessToken: response.data.access_token,
+      refreshToken: response.data.refresh_token,
+      expiresAt: Date.now() + response.data.expires_in * 1000,
+      remember,
+    });
+    this.toast.resetSessionExpiry();
+    await this.applicationSettings.load();
+    await this.language.load();
+    this.sessionExpiryFlight = undefined;
   }
 
   private readStoredSession(): AuthSession | null {

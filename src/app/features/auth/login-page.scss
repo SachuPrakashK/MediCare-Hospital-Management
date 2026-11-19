@@ -331,10 +331,6 @@
     background-color var(--transition-fast),
     color var(--transition-fast);
 }
-.login-demo__link:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
 .login-demo__link:hover {
   border-color: var(--mc-secondary);
   background: rgb(20 184 166 / 13%);
@@ -370,6 +366,21 @@
   to {
     transform: rotate(360deg);
   }
+}
+.guest-auth-switch {
+  margin: 0;
+  color: var(--mc-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+.guest-auth-switch a {
+  color: var(--mc-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.guest-auth-switch a:hover {
+  text-decoration: underline;
 }
 @media (max-width: 960px) {
   .login-shell {

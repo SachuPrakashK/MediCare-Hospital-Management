@@ -20,6 +20,32 @@ export const AUTH_ROUTES: Routes = [
     data: { mode: 'reset' },
   },
   {
+    path: 'guest',
+    canActivate: [guestGuard],
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('./login-page').then((m) => m.LoginPage),
+        data: { guestOnly: true },
+      },
+      {
+        path: 'register',
+        loadComponent: () => import('./guest-register-page').then((m) => m.GuestRegisterPage),
+      },
+      {
+        path: 'forgot-password',
+        loadComponent: () => import('./password-page').then((m) => m.PasswordPage),
+        data: { mode: 'forgot', guestOnly: true },
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () => import('./password-page').then((m) => m.PasswordPage),
+        data: { mode: 'reset', guestOnly: true },
+      },
+      { path: '', pathMatch: 'full', redirectTo: 'login' },
+    ],
+  },
+  {
     path: '**',
     data: { pageTitle: '404 - Page Not Found' },
     loadComponent: () =>

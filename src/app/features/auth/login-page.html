@@ -25,8 +25,14 @@
         <img src="logo-full-dark.svg" alt="MediCare+ Hospital Management System" />
       </div>
       <header class="login-card__header">
-        <h2>Welcome Back</h2>
-        <p>Sign in to your account to continue</p>
+        <h2>{{ guestOnly ? 'Guest Sign In' : 'Welcome Back' }}</h2>
+        <p>
+          {{
+            guestOnly
+              ? 'Sign in to your read-only guest account.'
+              : 'Sign in to your account to continue'
+          }}
+        </p>
       </header>
       <div class="login-field">
         <label for="login-email">Email Address <span aria-hidden="true">*</span></label>
@@ -94,9 +100,13 @@
         }
       </div>
       <div class="login-options">
-        <label class="login-check"
-          ><input type="checkbox" formControlName="remember" /><span>Remember me</span></label
-        ><a routerLink="/auth/forgot-password">Forgot password?</a>
+        @if (guestOnly) {
+          <span></span><a routerLink="/auth/guest/forgot-password">Forgot password?</a>
+        } @else {
+          <label class="login-check"
+            ><input type="checkbox" formControlName="remember" /><span>Remember me</span></label
+          ><a routerLink="/auth/forgot-password">Forgot password?</a>
+        }
       </div>
       @if (auth.error()) {
         <div class="login-alert" role="alert">
@@ -110,21 +120,30 @@
           <span>Sign In</span><app-icon name="arrow-right" [size]="18" />
         }
       </button>
-      <div class="login-demo" aria-label="Guest access">
-        <span class="login-demo__divider" aria-hidden="true">or</span>
-        <button
-          type="button"
-          class="login-demo__link"
-          [disabled]="auth.loading()"
-          (click)="continueAsGuest()"
-          aria-label="Enter MediCare+ with read-only guest access"
-        >
-          <app-icon name="eye" [size]="18" />
-          <span>Continue as Guest</span>
-          <app-icon name="arrow-right" [size]="16" />
-        </button>
-        <small>Explore approved demo features with read-only access.</small>
-      </div>
+      @if (!guestOnly) {
+        <div class="login-demo" aria-label="Guest access">
+          <span class="login-demo__divider" aria-hidden="true">or</span>
+          <a
+            class="login-demo__link"
+            routerLink="/auth/guest/login"
+            aria-label="Sign in with a read-only guest account"
+          >
+            <app-icon name="eye" [size]="18" />
+            <span>Sign In as Guest</span>
+            <app-icon name="arrow-right" [size]="16" />
+          </a>
+          <small>Use your guest account or create one to explore approved demo features.</small>
+        </div>
+        <p class="guest-auth-switch">
+          Need a guest account? <a routerLink="/auth/guest/login">Guest sign in</a> or
+          <a routerLink="/auth/guest/register">create one</a>.
+        </p>
+      } @else {
+        <p class="guest-auth-switch">
+          New to MediCare+? <a routerLink="/auth/guest/register">Create a guest account</a>.
+        </p>
+        <p class="guest-auth-switch"><a routerLink="/auth/login">Staff sign in</a></p>
+      }
       <p class="login-help">
         Need help accessing your account? Contact your hospital administrator.
       </p>

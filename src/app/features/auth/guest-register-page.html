@@ -1,0 +1,144 @@
+<main class="login-shell">
+  <app-auth-language-selector />
+  <section class="login-brand" aria-labelledby="guest-register-brand-title">
+    <img
+      class="login-brand__logo"
+      src="logo-full-light.svg"
+      alt="MediCare+ Hospital Management System"
+    />
+    <div class="login-brand__copy">
+      <h1 id="guest-register-brand-title">Smarter Healthcare<br />for Brighter Lives</h1>
+      <p>Create a guest account to explore approved MediCare+ demo features.</p>
+    </div>
+    <div class="login-brand__benefits" aria-label="Guest account restrictions">
+      <span><app-icon name="eye" [size]="22" />Read-only access</span>
+      <span><app-icon name="shield" [size]="22" />No staff privileges</span>
+      <span><app-icon name="patients" [size]="22" />Demo features only</span>
+    </div>
+  </section>
+
+  <section class="login-panel">
+    <form class="login-card password-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="login-mobile-brand">
+        <img src="logo-full-dark.svg" alt="MediCare+ Hospital Management System" />
+      </div>
+      <header class="login-card__header">
+        <h2>Create Guest Account</h2>
+        <p>Your account will have read-only access to approved demo modules.</p>
+      </header>
+
+      <div class="guest-register-name-row">
+        <div class="login-field">
+          <label for="guest-first-name">First name</label>
+          <div class="login-input">
+            <input
+              id="guest-first-name"
+              formControlName="first_name"
+              placeholder="Enter your first name"
+              autocomplete="given-name"
+              maxlength="80"
+            />
+          </div>
+          @if (form.controls.first_name.touched && form.controls.first_name.invalid) {
+            <small class="login-error">Enter your first name.</small>
+          }
+        </div>
+        <div class="login-field">
+          <label for="guest-last-name">Last name</label>
+          <div class="login-input">
+            <input
+              id="guest-last-name"
+              formControlName="last_name"
+              placeholder="Enter your last name"
+              autocomplete="family-name"
+              maxlength="80"
+            />
+          </div>
+          @if (form.controls.last_name.touched && form.controls.last_name.invalid) {
+            <small class="login-error">Enter your last name.</small>
+          }
+        </div>
+      </div>
+
+      <div class="login-field">
+        <label for="guest-email">Email address</label>
+        <div class="login-input">
+          <app-icon name="mail" [size]="19" />
+          <input
+            id="guest-email"
+            type="email"
+            dir="ltr"
+            formControlName="email"
+            placeholder="Enter your email address"
+            autocomplete="email"
+            inputmode="email"
+          />
+        </div>
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <small class="login-error">Enter a valid email address.</small>
+        }
+      </div>
+
+      <div class="login-field">
+        <label for="guest-password">Password</label>
+        <div class="login-input">
+          <app-icon name="lock" [size]="19" />
+          <input
+            id="guest-password"
+            type="password"
+            formControlName="password"
+            placeholder="Create a password"
+            autocomplete="new-password"
+            maxlength="128"
+          />
+        </div>
+        <small class="password-guidance"
+          >Use at least 12 characters. Your hospital may require additional rules.</small
+        >
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <small class="login-error">Password must be between 12 and 128 characters.</small>
+        }
+      </div>
+
+      <div class="login-field">
+        <label for="guest-confirmation">Confirm password</label>
+        <div class="login-input">
+          <app-icon name="lock" [size]="19" />
+          <input
+            id="guest-confirmation"
+            type="password"
+            formControlName="confirmation"
+            placeholder="Confirm your password"
+            autocomplete="new-password"
+            maxlength="128"
+          />
+        </div>
+        @if (
+          form.controls.confirmation.touched && form.controls.confirmation.errors?.['mismatch']
+        ) {
+          <small class="login-error">Passwords do not match.</small>
+        } @else if (form.controls.confirmation.touched && form.controls.confirmation.invalid) {
+          <small class="login-error">Confirm your password.</small>
+        }
+      </div>
+
+      @if (auth.error()) {
+        <div class="login-alert" role="alert">
+          <app-icon name="help" [size]="18" /><span>{{ auth.error() }}</span>
+        </div>
+      }
+
+      <button class="login-submit" type="submit" [disabled]="auth.loading()">
+        @if (auth.loading()) {
+          <span class="login-spinner" aria-hidden="true"></span><span>Creating account…</span>
+        } @else {
+          <span>Create Guest Account</span><app-icon name="arrow-right" [size]="18" />
+        }
+      </button>
+      <p class="guest-auth-switch">
+        Already registered? <a routerLink="/auth/guest/login">Guest sign in</a>.
+      </p>
+      <p class="guest-auth-switch"><a routerLink="/auth/login">Staff sign in</a></p>
+    </form>
+  </section>
+</main>

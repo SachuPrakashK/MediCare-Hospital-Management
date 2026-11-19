@@ -11,7 +11,6 @@ describe('LoginPage', () => {
     loading: signal(false),
     error: signal<string | null>(null),
     login: vi.fn(async () => true),
-    loginAsGuest: vi.fn(async () => true),
   };
   const router = { navigateByUrl: vi.fn() };
   const language = {
@@ -51,7 +50,6 @@ describe('LoginPage', () => {
 
   beforeEach(async () => {
     auth.login.mockClear();
-    auth.loginAsGuest.mockClear();
     router.navigateByUrl.mockClear();
     await TestBed.configureTestingModule({
       imports: [LoginPage],
@@ -94,15 +92,12 @@ describe('LoginPage', () => {
     expect(auth.login).not.toHaveBeenCalled();
   });
 
-  it('starts a restricted guest session and enters the application', async () => {
-    const button = fixture.nativeElement.querySelector('.login-demo__link') as HTMLButtonElement;
+  it('routes guest visitors to the dedicated guest sign-in page', () => {
+    const link = fixture.nativeElement.querySelector('.login-demo__link') as HTMLAnchorElement;
 
-    expect(button.textContent?.replace(/\s+/g, ' ').trim()).toContain('Continue as Guest');
-    button.click();
-    await fixture.whenStable();
-
-    expect(auth.loginAsGuest).toHaveBeenCalledTimes(1);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    expect(link.textContent?.replace(/\s+/g, ' ').trim()).toContain('Sign In as Guest');
+    expect(link.getAttribute('href')).toBe('/auth/guest/login');
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('shows enabled language names with canonical display codes and no visible label', () => {

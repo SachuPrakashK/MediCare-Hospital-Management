@@ -17,6 +17,7 @@ export class LoginPage {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  readonly guestOnly = this.route.snapshot.data['guestOnly'] === true;
   readonly passwordVisible = signal(false);
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -31,13 +32,13 @@ export class LoginPage {
   async submit() {
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
-    if (await this.auth.login(this.form.getRawValue()))
+    const value = this.form.getRawValue();
+    const signedIn = this.guestOnly
+      ? await this.auth.loginGuest(value)
+      : await this.auth.login(value);
+    if (signedIn)
       void this.router.navigateByUrl(
         this.route.snapshot.queryParamMap.get('returnUrl') || '/dashboard',
       );
-  }
-
-  async continueAsGuest() {
-    if (await this.auth.loginAsGuest()) void this.router.navigateByUrl('/dashboard');
   }
 }

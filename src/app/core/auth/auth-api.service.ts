@@ -11,9 +11,23 @@ export class AuthApiService {
       { headers: { 'X-Handle-Error-Locally': 'true' } },
     );
   }
+  forgotGuestPassword(email: string) {
+    return this.http.post<{ message: string }>(
+      '/api/v1/auth/guest/forgot-password',
+      { email },
+      { headers: { 'X-Handle-Error-Locally': 'true' } },
+    );
+  }
   resetPassword(token: string, password: string) {
     return this.http.post<{ message: string }>(
       '/api/v1/auth/reset-password',
+      { token, password },
+      { headers: { 'X-Handle-Error-Locally': 'true' } },
+    );
+  }
+  resetGuestPassword(token: string, password: string) {
+    return this.http.post<{ message: string }>(
+      '/api/v1/auth/guest/reset-password',
       { token, password },
       { headers: { 'X-Handle-Error-Locally': 'true' } },
     );

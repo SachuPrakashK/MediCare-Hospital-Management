@@ -17,6 +17,10 @@ const schema = z
     BLOB_STORE_ID: z.string().min(1).optional(),
     VERCEL_OIDC_TOKEN: z.string().min(1).optional(),
     FRONTEND_RESET_URL: z.string().url().default('http://localhost:4200/auth/reset-password'),
+    GUEST_REGISTRATION_ENABLED: z
+      .enum(['true', 'false'])
+      .default(process.env.NODE_ENV === 'production' ? 'false' : 'true')
+      .transform((value) => value === 'true'),
     NOTIFICATION_WEBHOOK_URL: z.preprocess(
       (value) => (value === '' ? undefined : value),
       z.string().url().optional(),

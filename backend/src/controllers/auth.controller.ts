@@ -9,6 +9,20 @@ export const login: RequestHandler = asyncHandler(async (req, res) => {
   });
   res.json({ data, message: 'Login successful.' });
 });
+export const guestLogin: RequestHandler = asyncHandler(async (req, res) => {
+  const data = await authService.loginGuest(req.body.email, req.body.password, {
+    userAgent: req.get('user-agent'),
+    ipAddress: req.ip,
+  });
+  res.json({ data, message: 'Guest sign in successful.' });
+});
+export const guestRegister: RequestHandler = asyncHandler(async (req, res) => {
+  const data = await authService.registerGuest(req.body, {
+    userAgent: req.get('user-agent'),
+    ipAddress: req.ip,
+  });
+  res.status(201).json({ data, message: 'Guest account created.' });
+});
 export const demoLogin: RequestHandler = asyncHandler(async (req, res) => {
   const data = await authService.demoLogin({
     userAgent: req.get('user-agent'),
@@ -50,7 +64,18 @@ export const forgotPassword: RequestHandler = asyncHandler(async (req, res) => {
     message: 'If an eligible account exists, password reset instructions have been sent.',
   });
 });
+export const forgotGuestPassword: RequestHandler = asyncHandler(async (req, res) => {
+  await authService.forgotGuestPassword(req.body.email);
+  res.json({
+    data: null,
+    message: 'If an eligible guest account exists, password reset instructions have been sent.',
+  });
+});
 export const resetPassword: RequestHandler = asyncHandler(async (req, res) => {
-  await authService.resetPassword(req.body.token, req.body.password);
+  await authService.resetPassword(req.body.token, req.body.password, 'staff');
   res.json({ data: null, message: 'Password reset successfully.' });
+});
+export const resetGuestPassword: RequestHandler = asyncHandler(async (req, res) => {
+  await authService.resetPassword(req.body.token, req.body.password, 'guest');
+  res.json({ data: null, message: 'Guest password reset successfully.' });
 });
