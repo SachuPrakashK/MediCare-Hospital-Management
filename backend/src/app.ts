@@ -62,10 +62,46 @@ export const createApp = () => {
     }),
   );
   app.use(
+    '/api/v1/auth/guest/login',
+    rateLimit({
+      windowMs: 15 * 60_000,
+      limit: async () => (await administrationService.security()).maximumLoginAttempts,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
+  );
+  app.use(
+    '/api/v1/auth/guest/register',
+    rateLimit({
+      windowMs: 60 * 60_000,
+      limit: 5,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
+  );
+  app.use(
     '/api/v1/auth/forgot-password',
     rateLimit({
       windowMs: 15 * 60_000,
       limit: 5,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
+  );
+  app.use(
+    '/api/v1/auth/guest/forgot-password',
+    rateLimit({
+      windowMs: 15 * 60_000,
+      limit: 5,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+    }),
+  );
+  app.use(
+    '/api/v1/auth/guest/reset-password',
+    rateLimit({
+      windowMs: 15 * 60_000,
+      limit: 10,
       standardHeaders: 'draft-8',
       legacyHeaders: false,
     }),

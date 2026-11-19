@@ -10,17 +10,47 @@ import { prisma } from '../config/prisma.js';
 import { administrationService, validatePasswordAgainstPolicy } from './administration.service.js';
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
-const permissionsFor = (user: Awaited<ReturnType<typeof authRepository.findUserByEmail>>) => [
-  ...new Set(
-    user?.roles.flatMap(({ role }) => role.permissions.map(({ permission }) => permission.code)) ??
-      [],
-  ),
-];
+type AuthUser = NonNullable<Awaited<ReturnType<typeof authRepository.findUserByEmail>>>;
+const guestPermissionCodes = [
+  'dashboard.view',
+  'patients.view',
+  'appointments.view',
+  'queue.view',
+  'laboratory.view',
+  'radiology.view',
+  'admissions.view',
+  'procedures.view',
+  'pharmacy.view',
+  'billing.view',
+  'insurance.view',
+  'inventory.view',
+  'ambulance.view',
+  'reports.view',
+  'doctors.view',
+  'departments.view',
+  'support.view',
+] as const;
+const guestPermissionAllowlist = new Set<string>(guestPermissionCodes);
 const rolesFor = (user: Awaited<ReturnType<typeof authRepository.findUserByEmail>>) => [
   ...new Set(user?.roles.map(({ role }) => role.code) ?? []),
 ];
+const permissionsFor = (user: Awaited<ReturnType<typeof authRepository.findUserByEmail>>) => {
+  const permissions = [
+    ...new Set(
+      user?.roles.flatMap(({ role }) =>
+        role.permissions.map(({ permission }) => permission.code),
+      ) ?? [],
+    ),
+  ];
+  return rolesFor(user).includes('GUEST')
+    ? permissions.filter((permission) => guestPermissionAllowlist.has(permission))
+    : permissions;
+};
+const isGuestOnly = (user: { roles: { role: { code: string } }[] } | null | undefined) =>
+  user?.roles.length === 1 && user.roles[0]?.role.code === 'GUEST';
+const hasGuestRole = (user: { roles: { role: { code: string } }[] } | null | undefined) =>
+  user?.roles.some(({ role }) => role.code === 'GUEST') ?? false;
 
-type AuthUser = NonNullable<Awaited<ReturnType<typeof authRepository.findUserByEmail>>>;
 const rolePriority = [
   'HOSPITAL_ADMIN',
   'DOCTOR',
@@ -93,6 +123,120 @@ const issueSession = async (
   };
 };
 
+const sendPasswordReset = async (user: AuthUser) => {
+  await authRepository.invalidatePasswordResets(user.id);
+  const token = randomUUID() + randomUUID();
+  await authRepository.createPasswordReset({
+    userId: user.id,
+    tokenHash: hashToken(token),
+    expiresAt: new Date(Date.now() + 30 * 60_000),
+  });
+  try {
+    const acceptance = await notificationProvider.sendPasswordReset(
+      user.email,
+      `${
+        isGuestOnly(user)
+          ? env.FRONTEND_RESET_URL.replace(/reset-password(?=([?#]|$))/, 'guest/reset-password')
+          : env.FRONTEND_RESET_URL
+      }?token=${encodeURIComponent(token)}`,
+    );
+    logger.info(
+      {
+        event: 'password-reset-provider-accepted',
+        provider: acceptance.provider,
+        userId: user.id,
+      },
+      'Password reset message accepted by notification provider',
+    );
+  } catch (error) {
+    await authRepository.invalidatePasswordResets(user.id);
+    logger.error(
+      { err: error, event: 'password-reset-delivery-failed', userId: user.id },
+      'Password reset message delivery failed',
+    );
+  }
+};
+
+const ensureGuestRole = async () =>
+  prisma.$transaction(async (tx) => {
+    const permissions = await Promise.all(
+      guestPermissionCodes.map((code) => {
+        const [module, action] = code.split('.');
+        return tx.permission.upsert({
+          where: { code },
+          update: { module: module!, action: action! },
+          create: { code, module: module!, action: action! },
+        });
+      }),
+    );
+    const role = await tx.role.upsert({
+      where: { code: 'GUEST' },
+      update: {
+        name: 'Guest',
+        description: 'Read-only access to approved demonstration modules',
+        status: 'ACTIVE',
+        isSystem: true,
+      },
+      create: {
+        code: 'GUEST',
+        name: 'Guest',
+        description: 'Read-only access to approved demonstration modules',
+        status: 'ACTIVE',
+        isSystem: true,
+      },
+    });
+    await tx.rolePermission.deleteMany({ where: { roleId: role.id } });
+    await tx.rolePermission.createMany({
+      data: permissions.map((permission) => ({ roleId: role.id, permissionId: permission.id })),
+    });
+    return role;
+  });
+
+const resetPasswordWithScope = async (
+  token: string,
+  password: string,
+  scope: 'guest' | 'staff' | 'any' = 'any',
+) => {
+  await validatePasswordAgainstPolicy(password);
+  const record = await authRepository.findPasswordReset(hashToken(token));
+  if (
+    !record ||
+    record.usedAt ||
+    record.expiresAt <= new Date() ||
+    record.user.status !== 'ACTIVE' ||
+    record.user.deletedAt !== null ||
+    (scope === 'guest' && !isGuestOnly(record.user)) ||
+    (scope === 'staff' && hasGuestRole(record.user))
+  ) {
+    throw new AppError(422, 'Validation failed.', 'VALIDATION_ERROR', {
+      token: ['The password reset link is invalid or expired.'],
+    });
+  }
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: record.userId },
+      data: { passwordHash: await argon2.hash(password) },
+    });
+    await tx.passwordResetToken.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() },
+    });
+    await tx.refreshSession.updateMany({
+      where: { userId: record.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await tx.auditLog.create({
+      data: {
+        userId: record.userId,
+        action: 'PASSWORD_RESET',
+        module: 'Authentication',
+        entityType: 'User',
+        entityId: record.userId,
+      },
+    });
+  });
+};
+
 export const authService = {
   async passwordPolicy() {
     const policy = await administrationService.security();
@@ -108,8 +252,12 @@ export const authService = {
     email: string,
     password: string,
     context: { userAgent?: string; ipAddress?: string },
+    guestOnly = false,
   ) {
-    let user = await authRepository.findUserByEmail(email);
+    let user = await authRepository.findUserByEmail(email.trim().toLowerCase());
+    const roleCodes = rolesFor(user);
+    if (user && (guestOnly ? !isGuestOnly(user) : roleCodes.includes('GUEST')))
+      throw new AppError(401, 'Email or password is incorrect.', 'INVALID_CREDENTIALS');
     const security = await administrationService.security();
     if (user?.lockedUntil && user.lockedUntil > new Date())
       throw new AppError(401, 'Email or password is incorrect.', 'INVALID_CREDENTIALS');
@@ -118,7 +266,7 @@ export const authService = {
         where: { id: user.id },
         data: { status: 'ACTIVE', lockedUntil: null, failedLoginAttempts: 0 },
       });
-      user = await authRepository.findUserByEmail(email);
+      user = await authRepository.findUserByEmail(email.trim().toLowerCase());
     }
     if (!user || user.status !== 'ACTIVE' || !(await argon2.verify(user.passwordHash, password))) {
       if (user) {
@@ -143,6 +291,59 @@ export const authService = {
       data: { failedLoginAttempts: 0, lockedUntil: null },
     });
     return issueSession(user, context);
+  },
+  async registerGuest(
+    input: { first_name: string; last_name: string; email: string; password: string },
+    context: { userAgent?: string; ipAddress?: string },
+  ) {
+    if (!env.GUEST_REGISTRATION_ENABLED) {
+      throw new AppError(403, 'Guest registration is not enabled.', 'GUEST_REGISTRATION_DISABLED');
+    }
+    await validatePasswordAgainstPolicy(input.password);
+    const email = input.email.trim().toLowerCase();
+    const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+    if (existing) throw new AppError(409, 'An account with this email already exists.', 'CONFLICT');
+    const guestRole = await ensureGuestRole();
+    const passwordHash = await argon2.hash(input.password);
+    const userId = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email,
+          firstName: input.first_name.trim(),
+          lastName: input.last_name.trim(),
+          passwordHash,
+          status: 'ACTIVE',
+        },
+      });
+      await tx.userRole.create({ data: { userId: created.id, roleId: guestRole.id } });
+      await tx.auditLog.create({
+        data: {
+          userId: created.id,
+          action: 'GUEST_ACCOUNT_REGISTERED',
+          module: 'Authentication',
+          entityType: 'User',
+          entityId: created.id,
+          ipAddress: context.ipAddress,
+        },
+      });
+      return created.id;
+    });
+    const user = await authRepository.findUserById(userId);
+    if (!user || !isGuestOnly(user)) {
+      throw new AppError(
+        503,
+        'Guest registration is currently unavailable.',
+        'GUEST_ACCESS_UNAVAILABLE',
+      );
+    }
+    return issueSession(user, context);
+  },
+  async loginGuest(
+    email: string,
+    password: string,
+    context: { userAgent?: string; ipAddress?: string },
+  ) {
+    return authService.login(email, password, context, true);
   },
   async demoLogin(context: { userAgent?: string; ipAddress?: string }) {
     const user = await authRepository.findUserByEmail('guest@medicare.demo');
@@ -236,64 +437,15 @@ export const authService = {
   },
   async forgotPassword(email: string) {
     const user = await authRepository.findUserByEmail(email.trim().toLowerCase());
-    if (!user || user.status !== 'ACTIVE') return;
-    await authRepository.invalidatePasswordResets(user.id);
-    const token = randomUUID() + randomUUID();
-    await authRepository.createPasswordReset({
-      userId: user.id,
-      tokenHash: hashToken(token),
-      expiresAt: new Date(Date.now() + 30 * 60_000),
-    });
-    try {
-      const acceptance = await notificationProvider.sendPasswordReset(
-        user.email,
-        `${env.FRONTEND_RESET_URL}?token=${encodeURIComponent(token)}`,
-      );
-      logger.info(
-        {
-          event: 'password-reset-provider-accepted',
-          provider: acceptance.provider,
-          userId: user.id,
-        },
-        'Password reset message accepted by notification provider',
-      );
-    } catch (error) {
-      await authRepository.invalidatePasswordResets(user.id);
-      logger.error(
-        { err: error, event: 'password-reset-delivery-failed', userId: user.id },
-        'Password reset message delivery failed',
-      );
-    }
+    if (!user || user.status !== 'ACTIVE' || rolesFor(user).includes('GUEST')) return;
+    await sendPasswordReset(user);
   },
-  async resetPassword(token: string, password: string) {
-    await validatePasswordAgainstPolicy(password);
-    const record = await authRepository.findPasswordReset(hashToken(token));
-    if (!record || record.usedAt || record.expiresAt <= new Date())
-      throw new AppError(422, 'Validation failed.', 'VALIDATION_ERROR', {
-        token: ['The password reset link is invalid or expired.'],
-      });
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: record.userId },
-        data: { passwordHash: await argon2.hash(password) },
-      });
-      await tx.passwordResetToken.update({
-        where: { id: record.id },
-        data: { usedAt: new Date() },
-      });
-      await tx.refreshSession.updateMany({
-        where: { userId: record.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      await tx.auditLog.create({
-        data: {
-          userId: record.userId,
-          action: 'PASSWORD_RESET',
-          module: 'Authentication',
-          entityType: 'User',
-          entityId: record.userId,
-        },
-      });
-    });
+  async forgotGuestPassword(email: string) {
+    const user = await authRepository.findUserByEmail(email.trim().toLowerCase());
+    if (!user || user.status !== 'ACTIVE' || !isGuestOnly(user)) return;
+    await sendPasswordReset(user);
+  },
+  async resetPassword(token: string, password: string, scope: 'guest' | 'staff' | 'any' = 'any') {
+    await resetPasswordWithScope(token, password, scope);
   },
 };

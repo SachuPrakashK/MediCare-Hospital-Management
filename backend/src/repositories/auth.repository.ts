@@ -46,7 +46,10 @@ export const authRepository = {
   createPasswordReset: (data: { userId: string; tokenHash: string; expiresAt: Date }) =>
     prisma.passwordResetToken.create({ data }),
   findPasswordReset: (tokenHash: string) =>
-    prisma.passwordResetToken.findUnique({ where: { tokenHash } }),
+    prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: { include: { roles: { include: { role: true } } } } },
+    }),
   consumePasswordReset: (id: string) =>
     prisma.passwordResetToken.update({ where: { id }, data: { usedAt: new Date() } }),
   invalidatePasswordResets: (userId: string) =>

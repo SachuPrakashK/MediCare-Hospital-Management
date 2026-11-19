@@ -18,6 +18,7 @@ export class PasswordPage {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(AuthApiService);
   readonly reset = this.route.snapshot.data['mode'] === 'reset';
+  readonly guestOnly = this.route.snapshot.data['guestOnly'] === true;
   private readonly token = this.route.snapshot.queryParamMap.get('token')?.trim() ?? '';
   readonly missingToken = this.reset && !this.token;
   readonly loading = signal(false);
@@ -60,8 +61,16 @@ export class PasswordPage {
     this.loading.set(true);
     try {
       const response = this.reset
-        ? await firstValueFrom(this.api.resetPassword(this.token, value.password))
-        : await firstValueFrom(this.api.forgotPassword(value.email.trim()));
+        ? await firstValueFrom(
+            this.guestOnly
+              ? this.api.resetGuestPassword(this.token, value.password)
+              : this.api.resetPassword(this.token, value.password),
+          )
+        : await firstValueFrom(
+            this.guestOnly
+              ? this.api.forgotGuestPassword(value.email.trim())
+              : this.api.forgotPassword(value.email.trim()),
+          );
       this.successMessage.set(response.message);
       this.form.reset();
     } catch (error) {
